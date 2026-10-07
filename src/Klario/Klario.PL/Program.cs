@@ -1,3 +1,5 @@
+using Klario.BLL.Interfaces;
+using Klario.BLL.Services;
 using Klario.DAL.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -21,6 +23,9 @@ builder.Services.AddMediatR(cfg =>
 
 // Register AutoMapper
 builder.Services.AddAutoMapper(cfg => { }, typeof(Klario.BLL.IAssemblyMarker).Assembly, typeof(Program).Assembly);
+
+// Register Telegram Service
+builder.Services.AddHttpClient<ITelegramService, TelegramService>();
 
 // Register Swagger
 builder.Services.AddEndpointsApiExplorer();
