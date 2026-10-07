@@ -1,0 +1,6 @@
+@Klario.PL_HostAddress = http://localhost:5008
+
+GET {{Klario.PL_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
