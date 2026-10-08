@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ "$SKIP_HOOK" = "1" ]; then
+    exit 0
+fi
+
+if [ "$3" -eq 1 ]; then
+    CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+    if [ "$CURRENT_BRANCH" = "main" ]; then
+        echo "Switched to main. Pulling latest updates..."
+        git pull --ff-only
+    fi
+fi
