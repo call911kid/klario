@@ -1,7 +1,7 @@
 using AutoMapper;
 using Klario.BLL.Exceptions;
 using Klario.DAL.Context;
-using Klario.DAL.Enums;
+using Klario.Common.Enums;
 using Klario.DAL.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

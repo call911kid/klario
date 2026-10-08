@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Klario.BLL/Klario.BLL.csproj" Id="99e47b39-5475-4cde-9e2d-14145e0b4810" />
+  <Project Path="Klario.Common/Klario.Common.csproj" />
   <Project Path="Klario.DAL/Klario.DAL.csproj" />
   <Project Path="Klario.PL/Klario.PL.csproj" />
 </Solution>

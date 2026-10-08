@@ -1,4 +1,4 @@
-using Klario.DAL.Enums;
+using Klario.Common.Enums;
 
 namespace Klario.PL.DTOs.Requests;
 

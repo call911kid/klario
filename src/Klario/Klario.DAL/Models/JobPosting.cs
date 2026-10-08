@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Klario.DAL.Enums;
+using Klario.Common.Enums;
 
 namespace Klario.DAL.Models
 {
