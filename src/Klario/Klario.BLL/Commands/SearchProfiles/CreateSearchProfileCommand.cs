@@ -1,6 +1,6 @@
 using AutoMapper;
 using Klario.DAL.Context;
-using Klario.DAL.Enums;
+using Klario.Common.Enums;
 using Klario.DAL.Models;
 using MediatR;
 

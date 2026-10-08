@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Klario.DAL.Enums
+namespace Klario.Common.Enums
 {
     [Flags]
     public enum ExperienceLevel
@@ -11,6 +7,5 @@ namespace Klario.DAL.Enums
         Internship = 1 << 0,
         Junior = 1 << 1,
         MidLevel = 1 << 2,
-
     }
 }
