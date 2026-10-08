@@ -3,4 +3,5 @@
   <Project Path="Klario.Common/Klario.Common.csproj" />
   <Project Path="Klario.DAL/Klario.DAL.csproj" />
   <Project Path="Klario.PL/Klario.PL.csproj" />
+  <Project Path="Klario.Providers/Klario.Providers.csproj" />
 </Solution>
