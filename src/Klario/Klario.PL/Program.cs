@@ -79,4 +79,6 @@ app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 
+app.MapGet("/api/health", () => Results.Ok("Healthy"));
+
 app.Run();
