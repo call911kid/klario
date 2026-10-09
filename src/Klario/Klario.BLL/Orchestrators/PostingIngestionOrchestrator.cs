@@ -52,7 +52,7 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
         var criteria = new PostingSearchCriteria(
             TargetTitles: profile.TargetJobTitles,
             TargetLocations: profile.TargetLocations,
-            MaxPostingAge: profile.MaxPostingAge,
+            MaxPostingAge: TimeSpan.FromMinutes(profile.MaxPostingAgeMinutes),
             Workplace: profile.Workplace,
             Experience: profile.Experience,
             JobType: profile.JobType

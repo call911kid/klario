@@ -9,7 +9,7 @@ public class UpdateSearchProfileRequestDto
     public bool IsActive { get; set; } = true;
     public List<string> TargetJobTitles { get; set; } = new();
     public List<string> TargetLocations { get; set; } = new();
-    public TimeSpan MaxPostingAge { get; set; } = TimeSpan.FromHours(2);
+    public int MaxPostingAgeMinutes { get; set; } = 1440;
     public int IntervalMinutes { get; set; } = 15;
     public WorkplacePreference Workplace { get; set; } = WorkplacePreference.Remote;
     public ExperienceLevel Experience { get; set; } = ExperienceLevel.MidLevel;

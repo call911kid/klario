@@ -9,7 +9,7 @@ public record SearchProfileResponse(
     bool IsActive,
     List<string> TargetJobTitles,
     List<string> TargetLocations,
-    TimeSpan MaxPostingAge,
+    int MaxPostingAgeMinutes,
     int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,

@@ -14,7 +14,7 @@ namespace Klario.DAL.Models
         public List<string> TargetJobTitles { get; set; }
         public List<string> TargetLocations { get; set; }
 
-        public TimeSpan MaxPostingAge { get; set; }
+        public int MaxPostingAgeMinutes { get; set; } = 1440;
         public int IntervalMinutes { get; set; } = 15;
         public WorkplacePreference Workplace { get; set; }
         public ExperienceLevel Experience { get; set; }

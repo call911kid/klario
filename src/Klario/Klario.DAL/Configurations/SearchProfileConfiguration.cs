@@ -28,6 +28,10 @@ public class SearchProfileConfiguration : IEntityTypeConfiguration<SearchProfile
         builder.Property(sp => sp.IntervalMinutes)
             .IsRequired();
 
+        builder.Property(sp => sp.MaxPostingAgeMinutes)
+            .IsRequired()
+            .HasDefaultValue(1440);
+
         builder.Property(sp => sp.Workplace)
             .HasConversion<string>()
             .HasMaxLength(50);
