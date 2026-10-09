@@ -11,6 +11,7 @@ public class SearchProfileResponseDto
     public List<string> TargetJobTitles { get; set; } = new();
     public List<string> TargetLocations { get; set; } = new();
     public TimeSpan MaxPostingAge { get; set; }
+    public int IntervalMinutes { get; set; } = 15;
     public WorkplacePreference Workplace { get; set; }
     public ExperienceLevel Experience { get; set; }
     public JobType JobType { get; set; }
