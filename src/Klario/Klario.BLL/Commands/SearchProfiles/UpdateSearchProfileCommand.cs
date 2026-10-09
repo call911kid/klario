@@ -17,6 +17,7 @@ public record UpdateSearchProfileCommand(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     TimeSpan MaxPostingAge,
+    int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
     JobType JobType,
@@ -55,7 +56,7 @@ public class UpdateSearchProfileCommandHandler : IRequestHandler<UpdateSearchPro
 
         if (entity.IsActive && !entity.IsDeleted)
         {
-            _scheduleManager.ScheduleRecurringIngestion(entity.Id);
+            _scheduleManager.ScheduleRecurringIngestion(entity.Id, entity.IntervalMinutes);
         }
         else
         {

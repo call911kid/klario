@@ -8,8 +8,6 @@ namespace Klario.PL.Services;
 
 public class HangfirePostingScheduleManager : IPostingScheduleManager
 {
-    private const string DefaultCronExpression = "*/15 * * * *";
-
     private readonly IRecurringJobManager _recurringJobManager;
     private readonly IMediator _mediator;
 
@@ -19,10 +17,12 @@ public class HangfirePostingScheduleManager : IPostingScheduleManager
         _mediator = mediator;
     }
 
-    public void ScheduleRecurringIngestion(Guid profileId, string cronExpression = DefaultCronExpression)
+    public void ScheduleRecurringIngestion(Guid profileId, int intervalMinutes)
     {
         string jobId = GetJobId(profileId);
-        string cron = string.IsNullOrWhiteSpace(cronExpression) ? DefaultCronExpression : cronExpression;
+        string cron = intervalMinutes >= 60
+            ? Cron.HourInterval(Math.Max(1, intervalMinutes / 60))
+            : Cron.MinuteInterval(Math.Max(1, intervalMinutes));
 
         _recurringJobManager.AddOrUpdate<HangfirePostingScheduleManager>(
             jobId,

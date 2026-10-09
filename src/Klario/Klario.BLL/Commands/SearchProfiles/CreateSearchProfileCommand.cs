@@ -13,6 +13,7 @@ public record CreateSearchProfileCommand(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     TimeSpan MaxPostingAge,
+    int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
     JobType JobType,
@@ -44,7 +45,7 @@ public class CreateSearchProfileCommandHandler : IRequestHandler<CreateSearchPro
         _context.SearchProfiles.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _scheduleManager.ScheduleRecurringIngestion(entity.Id);
+        _scheduleManager.ScheduleRecurringIngestion(entity.Id, entity.IntervalMinutes);
 
         return entity.Id;
     }

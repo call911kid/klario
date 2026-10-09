@@ -25,6 +25,9 @@ public class SearchProfileConfiguration : IEntityTypeConfiguration<SearchProfile
             .IsRequired()
             .HasMaxLength(150);
 
+        builder.Property(sp => sp.IntervalMinutes)
+            .IsRequired();
+
         builder.Property(sp => sp.Workplace)
             .HasConversion<string>()
             .HasMaxLength(50);

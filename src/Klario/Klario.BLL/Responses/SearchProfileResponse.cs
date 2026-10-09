@@ -10,6 +10,7 @@ public record SearchProfileResponse(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     TimeSpan MaxPostingAge,
+    int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
     JobType JobType,
