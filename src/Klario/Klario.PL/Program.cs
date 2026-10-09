@@ -27,6 +27,9 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(Klario.BLL.IAssemblyMarker).As
 // Register Telegram Service
 builder.Services.AddHttpClient<ITelegramService, TelegramService>();
 
+// Register Alert Formatter
+builder.Services.AddScoped<IPostingAlertFormatter, TelegramPostingAlertFormatter>();
+
 // Register Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
