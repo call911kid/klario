@@ -1,5 +1,6 @@
 using AutoMapper;
 using Klario.BLL.Exceptions;
+using Klario.BLL.Interfaces;
 using Klario.DAL.Context;
 using Klario.Common.Enums;
 using Klario.DAL.Models;
@@ -27,11 +28,16 @@ public class UpdateSearchProfileCommandHandler : IRequestHandler<UpdateSearchPro
 {
     private readonly KlarioDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IPostingScheduleManager _scheduleManager;
 
-    public UpdateSearchProfileCommandHandler(KlarioDbContext context, IMapper mapper)
+    public UpdateSearchProfileCommandHandler(
+        KlarioDbContext context,
+        IMapper mapper,
+        IPostingScheduleManager scheduleManager)
     {
         _context = context;
         _mapper = mapper;
+        _scheduleManager = scheduleManager;
     }
 
     public async Task Handle(UpdateSearchProfileCommand request, CancellationToken cancellationToken)
@@ -46,5 +52,14 @@ public class UpdateSearchProfileCommandHandler : IRequestHandler<UpdateSearchPro
 
         _mapper.Map(request, entity);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (entity.IsActive && !entity.IsDeleted)
+        {
+            _scheduleManager.ScheduleRecurringIngestion(entity.Id);
+        }
+        else
+        {
+            _scheduleManager.RemoveRecurringIngestion(entity.Id);
+        }
     }
 }
