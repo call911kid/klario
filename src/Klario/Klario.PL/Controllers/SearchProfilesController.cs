@@ -61,7 +61,7 @@ public class SearchProfilesController : ControllerBase
             dto.IsActive,
             dto.TargetJobTitles,
             dto.TargetLocations,
-            dto.MaxPostingAge,
+            dto.MaxPostingAgeMinutes,
             dto.IntervalMinutes,
             dto.Workplace,
             dto.Experience,

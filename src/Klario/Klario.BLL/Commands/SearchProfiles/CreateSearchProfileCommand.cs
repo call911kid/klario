@@ -12,7 +12,7 @@ public record CreateSearchProfileCommand(
     string? Description,
     List<string> TargetJobTitles,
     List<string> TargetLocations,
-    TimeSpan MaxPostingAge,
+    int MaxPostingAgeMinutes,
     int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
