@@ -16,7 +16,10 @@ public class PostingMatcher : IPostingMatcher
         new(ExperienceLevel.Internship, new(@"\b(intern|internship|co-?op)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
     ];
 
-    public bool MatchesExperience(
+    private static readonly Regex SeparatorsRegex = new(@"[-/_|\\()\[\]{},:;~!]+", RegexOptions.Compiled);
+    private static readonly Regex MultiSpaceRegex = new(@"\s+", RegexOptions.Compiled);
+
+    public bool IsMatch(
         string postingTitle,
         IReadOnlyList<string> targetTitles,
         ExperienceLevel allowedExperience)
@@ -24,6 +27,20 @@ public class PostingMatcher : IPostingMatcher
         if (string.IsNullOrWhiteSpace(postingTitle))
             return false;
 
+        if (!MatchesExperience(postingTitle, targetTitles, allowedExperience))
+            return false;
+
+        if (!MatchesTitle(postingTitle, targetTitles))
+            return false;
+
+        return true;
+    }
+
+    public bool MatchesExperience(
+        string postingTitle,
+        IReadOnlyList<string> targetTitles,
+        ExperienceLevel allowedExperience)
+    {
         if (allowedExperience == ExperienceLevel.None)
             return true;
 
@@ -38,5 +55,31 @@ public class PostingMatcher : IPostingMatcher
         }
 
         return true;
+    }
+
+    public bool MatchesTitle(string postingTitle, IReadOnlyList<string> targetTitles)
+    {
+        if (targetTitles.Count == 0)
+            return true;
+
+        string sanitizedPosting = Sanitize(postingTitle);
+
+        return targetTitles.Any(target =>
+        {
+            if (string.IsNullOrWhiteSpace(target))
+                return false;
+
+            string sanitizedTarget = Sanitize(target);
+            return sanitizedPosting.Contains(sanitizedTarget, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    private static string Sanitize(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        string withSpaces = SeparatorsRegex.Replace(text, " ");
+        return MultiSpaceRegex.Replace(withSpaces, " ").Trim();
     }
 }
