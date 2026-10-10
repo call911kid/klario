@@ -3,6 +3,7 @@ using Hangfire.SqlServer;
 using Klario.BLL.Interfaces;
 using Klario.BLL.Services;
 using Klario.DAL.Context;
+using Klario.PL.Middleware;
 using Klario.PL.Services;
 using Klario.Providers.DI;
 using Microsoft.EntityFrameworkCore;
@@ -68,6 +69,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
