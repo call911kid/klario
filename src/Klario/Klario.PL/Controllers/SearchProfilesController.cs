@@ -25,7 +25,20 @@ public class SearchProfilesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSearchProfileRequestDto dto)
     {
-        var command = _mapper.Map<CreateSearchProfileCommand>(dto);
+        var command = new CreateSearchProfileCommand(
+            dto.Name,
+            dto.Description,
+            dto.TargetJobTitles,
+            dto.TargetLocations,
+            dto.MaxPostingAgeMinutes,
+            dto.IntervalMinutes,
+            dto.Workplace,
+            dto.Experience,
+            dto.JobType,
+            dto.TelegramChatId,
+            dto.BotToken
+        );
+
         var id = await _mediator.Send(command);
 
         return CreatedAtAction(nameof(GetById), new { id }, ApiResponse.Success(id));
