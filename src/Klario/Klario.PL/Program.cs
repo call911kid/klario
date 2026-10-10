@@ -12,6 +12,16 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -81,10 +91,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
+app.UseRouting();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseMiddleware<ApiKeyMiddleware>();
+}
+
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
-app.MapControllers();
 
-app.MapGet("/api/health", () => Results.Ok("Healthy"));
+app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
+
+app.MapControllers();
 
 app.Run();
