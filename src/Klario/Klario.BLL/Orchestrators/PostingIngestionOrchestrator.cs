@@ -21,19 +21,22 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
     private readonly IMediator _mediator;
     private readonly IPostingAlertFormatter _formatter;
     private readonly ITelegramService _telegramService;
+    private readonly IPostingMatcher _postingMatcher;
 
     public PostingIngestionOrchestratorHandler(
         KlarioDbContext context,
         IEnumerable<IPostingProvider> providers,
         IMediator mediator,
         IPostingAlertFormatter formatter,
-        ITelegramService telegramService)
+        ITelegramService telegramService,
+        IPostingMatcher postingMatcher)
     {
         _context = context;
         _providers = providers;
         _mediator = mediator;
         _formatter = formatter;
         _telegramService = telegramService;
+        _postingMatcher = postingMatcher;
     }
 
     public async Task Handle(PostingIngestionOrchestrator request, CancellationToken cancellationToken)
@@ -62,11 +65,17 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
         if (discoveredPostings.Count == 0)
             return;
 
-        var externalIds = discoveredPostings.Select(p => p.ExternalId).ToList();
+        var matchedPostings = discoveredPostings
+            .Where(p => _postingMatcher.MatchesExperience(p.Title, profile.TargetJobTitles, profile.Experience))
+            .ToList();
+        if (matchedPostings.Count == 0)
+            return;
+
+        var externalIds = matchedPostings.Select(p => p.ExternalId).ToList();
         var existingIdsQuery = new GetExistingJobPostingIdsQuery(request.Source, externalIds);
         var existingIds = await _mediator.Send(existingIdsQuery, cancellationToken);
 
-        var newPostings = discoveredPostings
+        var newPostings = matchedPostings
             .Where(p => !existingIds.Contains(p.ExternalId))
             .ToList();
 

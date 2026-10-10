@@ -34,6 +34,9 @@ builder.Services.AddHttpClient<ITelegramService, TelegramService>();
 // Register Alert Formatter
 builder.Services.AddScoped<IPostingAlertFormatter, TelegramPostingAlertFormatter>();
 
+// Register Posting Matcher
+builder.Services.AddScoped<IPostingMatcher, PostingMatcher>();
+
 // Register Posting Providers
 builder.Services.AddLinkedInProvider();
 
