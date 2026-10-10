@@ -27,7 +27,7 @@ public class LinkedInProvider : IPostingProvider
             return Array.Empty<ExternalPosting>();
 
         var targets = BuildSearchTargets(criteria.TargetTitles, criteria.TargetLocations);
-        var discoveredPostings = await ExecuteParallelSearchesAsync(targets, criteria.MaxPostingAge, cancellationToken);
+        var discoveredPostings = await ExecuteParallelSearchesAsync(targets, criteria, cancellationToken);
 
         return discoveredPostings
             .DistinctBy(p => p.ExternalId)
@@ -46,7 +46,7 @@ public class LinkedInProvider : IPostingProvider
 
     private async Task<List<ExternalPosting>> ExecuteParallelSearchesAsync(
         List<(string Title, string Location)> targets,
-        TimeSpan maxPostingAge,
+        PostingSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
         var discoveredPostings = new ConcurrentBag<ExternalPosting>();
@@ -62,7 +62,7 @@ public class LinkedInProvider : IPostingProvider
             {
                 try
                 {
-                    var postings = await FetchPostingsForTargetAsync(target.Title, target.Location, maxPostingAge, ct);
+                    var postings = await FetchPostingsForTargetAsync(target.Title, target.Location, criteria, ct);
                     foreach (var posting in postings)
                     {
                         discoveredPostings.Add(posting);
@@ -86,10 +86,10 @@ public class LinkedInProvider : IPostingProvider
     private async Task<List<ExternalPosting>> FetchPostingsForTargetAsync(
         string title,
         string location,
-        TimeSpan maxPostingAge,
+        PostingSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        string searchUrl = BuildSearchUrl(title, location, maxPostingAge);
+        string searchUrl = BuildSearchUrl(title, location, criteria);
         string? html = await FetchHtmlAsync(searchUrl, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(html))
@@ -98,12 +98,33 @@ public class LinkedInProvider : IPostingProvider
         return ParsePostingCards(html);
     }
 
-    private static string BuildSearchUrl(string title, string location, TimeSpan maxPostingAge)
+    private static string BuildSearchUrl(string title, string location, PostingSearchCriteria criteria)
     {
-        int seconds = (int)maxPostingAge.TotalSeconds;
+        int seconds = (int)criteria.MaxPostingAge.TotalSeconds;
         if (seconds <= 0) seconds = 3600;
 
-        return $"{BaseSearchUrl}?keywords={Uri.EscapeDataString(title)}&location={Uri.EscapeDataString(location)}&f_TPR=r{seconds}&sortBy=DD&start=0";
+        var queryParams = new List<string>
+        {
+            $"keywords={Uri.EscapeDataString(title)}",
+            $"location={Uri.EscapeDataString(location)}",
+            $"f_TPR=r{seconds}",
+            "sortBy=DD",
+            "start=0"
+        };
+
+        string? experience = LinkedInSearchParameterMapper.MapExperience(criteria.Experience);
+        if (experience != null)
+            queryParams.Add($"f_E={experience}");
+
+        string? workplace = LinkedInSearchParameterMapper.MapWorkplace(criteria.Workplace);
+        if (workplace != null)
+            queryParams.Add($"f_WT={workplace}");
+
+        string? jobType = LinkedInSearchParameterMapper.MapJobType(criteria.JobType);
+        if (jobType != null)
+            queryParams.Add($"f_JT={jobType}");
+
+        return $"{BaseSearchUrl}?{string.Join("&", queryParams)}";
     }
 
     private async Task<string?> FetchHtmlAsync(string searchUrl, CancellationToken cancellationToken)
