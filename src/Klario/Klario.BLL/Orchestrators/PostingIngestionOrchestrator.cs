@@ -66,7 +66,7 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
             return;
 
         var matchedPostings = discoveredPostings
-            .Where(p => _postingMatcher.MatchesExperience(p.Title, profile.TargetJobTitles, profile.Experience))
+            .Where(p => _postingMatcher.IsMatch(p.Title, profile.TargetJobTitles, profile.Experience))
             .ToList();
         if (matchedPostings.Count == 0)
             return;
