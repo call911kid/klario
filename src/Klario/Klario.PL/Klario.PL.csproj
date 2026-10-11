@@ -25,4 +25,16 @@
     <ProjectReference Include="..\Klario.DAL\Klario.DAL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\Klario.Console\wwwroot\**\*">
+      <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="EnsureWwwroot" BeforeTargets="Build">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot" Condition="!Exists('$(MSBuildProjectDirectory)\wwwroot')" />
+  </Target>
+
 </Project>

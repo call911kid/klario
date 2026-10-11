@@ -3,6 +3,7 @@ using Hangfire.SqlServer;
 using Klario.BLL.Interfaces;
 using Klario.BLL.Services;
 using Klario.DAL.Context;
+using Klario.PL.Authentication;
 using Klario.PL.Middleware;
 using Klario.PL.Services;
 using Klario.Providers.DI;
@@ -73,6 +74,17 @@ builder.Services.AddHangfireServer(options =>
 builder.Services.AddScoped<HangfirePostingScheduleManager>();
 builder.Services.AddScoped<IPostingScheduleManager>(sp => sp.GetRequiredService<HangfirePostingScheduleManager>());
 
+// Register Authentication & Authorization
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = ApiKeyAuthenticationOptions.DefaultScheme;
+    options.DefaultChallengeScheme = ApiKeyAuthenticationOptions.DefaultScheme;
+})
+.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+    ApiKeyAuthenticationOptions.DefaultScheme, null);
+
+builder.Services.AddAuthorization();
+
 // Register Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -92,11 +104,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+if (app.Configuration.GetValue<bool>("Console:Enabled", true))
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseCors();
 app.UseRouting();
 
-app.UseMiddleware<ApiKeyMiddleware>();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
