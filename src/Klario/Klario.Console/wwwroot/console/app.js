@@ -380,15 +380,36 @@
         gateKeyInput.focus();
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramApi = urlParams.get('api');
-    if (paramApi) {
-        apiUrlInput.value = paramApi.trim().replace(/\/+$/, '');
-        localStorage.setItem(URL_STORAGE_KEY, apiUrlInput.value);
-    } else {
+    async function initApiUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramApi = urlParams.get('api');
+        if (paramApi) {
+            apiUrlInput.value = paramApi.trim().replace(/\/+$/, '');
+            localStorage.setItem(URL_STORAGE_KEY, apiUrlInput.value);
+            return;
+        }
+
         const savedUrl = localStorage.getItem(URL_STORAGE_KEY);
-        if (savedUrl) apiUrlInput.value = savedUrl;
+        if (savedUrl) {
+            apiUrlInput.value = savedUrl;
+            return;
+        }
+
+        try {
+            const res = await fetch('config.json');
+            if (res.ok) {
+                const cfg = await res.json();
+                if (cfg && cfg.apiUrl && typeof cfg.apiUrl === 'string' && cfg.apiUrl.trim()) {
+                    apiUrlInput.value = cfg.apiUrl.trim().replace(/\/+$/, '');
+                    return;
+                }
+            }
+        } catch {}
+
+        apiUrlInput.value = window.location.origin;
     }
+
+    initApiUrl();
 
     apiUrlInput.addEventListener('change', () => {
         const val = apiUrlInput.value.trim().replace(/\/+$/, '');

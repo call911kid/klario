@@ -5,10 +5,12 @@ using Klario.PL.DTOs.Requests;
 using Klario.PL.DTOs.Responses;
 using Klario.PL.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Klario.PL.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class SearchProfilesController : ControllerBase
