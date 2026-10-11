@@ -88,19 +88,16 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseRouting();
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseMiddleware<ApiKeyMiddleware>();
-}
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseAuthorization();
-app.UseHangfireDashboard("/hangfire");
 
 app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
 
