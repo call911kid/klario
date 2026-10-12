@@ -1,4 +1,3 @@
-using AutoMapper;
 using Klario.BLL.Exceptions;
 using Klario.BLL.Interfaces;
 using Klario.DAL.Context;
@@ -28,16 +27,13 @@ public record UpdateSearchProfileCommand(
 public class UpdateSearchProfileCommandHandler : IRequestHandler<UpdateSearchProfileCommand>
 {
     private readonly KlarioDbContext _context;
-    private readonly IMapper _mapper;
     private readonly IPostingScheduleManager _scheduleManager;
 
     public UpdateSearchProfileCommandHandler(
         KlarioDbContext context,
-        IMapper mapper,
         IPostingScheduleManager scheduleManager)
     {
         _context = context;
-        _mapper = mapper;
         _scheduleManager = scheduleManager;
     }
 
@@ -51,16 +47,38 @@ public class UpdateSearchProfileCommandHandler : IRequestHandler<UpdateSearchPro
             throw new EntityNotFoundException(nameof(SearchProfile), request.Id);
         }
 
-        _mapper.Map(request, entity);
+        entity.Name = request.Name;
+        entity.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        entity.IsActive = request.IsActive;
+        entity.TargetJobTitles = request.TargetJobTitles;
+        entity.TargetLocations = request.TargetLocations;
+        entity.MaxPostingAgeMinutes = request.MaxPostingAgeMinutes;
+        entity.IntervalMinutes = request.IntervalMinutes;
+        entity.Workplace = request.Workplace;
+        entity.Experience = request.Experience;
+        entity.JobType = request.JobType;
+        entity.TelegramChatId = request.TelegramChatId;
+
+        if (!string.IsNullOrWhiteSpace(request.BotToken))
+        {
+            entity.BotToken = request.BotToken.Trim();
+        }
+
+        var scheduleChanged = _context.Entry(entity).Property(e => e.IntervalMinutes).IsModified ||
+                              _context.Entry(entity).Property(e => e.IsActive).IsModified;
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        if (entity.IsActive && !entity.IsDeleted)
+        if (scheduleChanged)
         {
-            _scheduleManager.ScheduleRecurringIngestion(entity.Id, entity.IntervalMinutes);
-        }
-        else
-        {
-            _scheduleManager.RemoveRecurringIngestion(entity.Id);
+            if (entity.IsActive && !entity.IsDeleted)
+            {
+                _scheduleManager.ScheduleRecurringIngestion(entity.Id, entity.IntervalMinutes);
+            }
+            else
+            {
+                _scheduleManager.RemoveRecurringIngestion(entity.Id);
+            }
         }
     }
 }

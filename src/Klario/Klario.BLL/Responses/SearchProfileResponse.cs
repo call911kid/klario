@@ -15,5 +15,6 @@ public record SearchProfileResponse(
     ExperienceLevel Experience,
     JobType JobType,
     string TelegramChatId,
+    string BotToken,
     DateTime CreatedAt
 );

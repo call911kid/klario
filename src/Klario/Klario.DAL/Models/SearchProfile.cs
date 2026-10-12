@@ -8,7 +8,7 @@ namespace Klario.DAL.Models
     public class SearchProfile: BaseEntity
     {
         public string Name { get; set; }
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public bool IsActive { get; set; }
 
         public List<string> TargetJobTitles { get; set; }
