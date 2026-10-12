@@ -16,5 +16,6 @@ public class SearchProfileResponseDto
     public ExperienceLevel Experience { get; set; }
     public JobType JobType { get; set; }
     public string TelegramChatId { get; set; } = string.Empty;
+    public string BotToken { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
