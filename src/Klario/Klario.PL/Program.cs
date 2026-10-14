@@ -5,10 +5,12 @@ using Klario.BLL.Interfaces;
 using Klario.BLL.Services;
 using Klario.DAL.Context;
 using Klario.PL.Authentication;
+using Klario.PL.Extensions;
 using Klario.PL.Middleware;
 using Klario.PL.Services;
 using Klario.Providers.DI;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,7 +34,10 @@ builder.Services.AddControllers()
 
 // Register DbContext
 builder.Services.AddDbContext<KlarioDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.ConfigureWarnings(warnings => warnings.Log(RelationalEventId.PendingModelChangesWarning));
+});
 
 // Register Business Logic (MediatR, Services, Matching)
 builder.Services.AddBusinessLogic();
@@ -111,5 +116,7 @@ app.UseAuthorization();
 app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
 
 app.MapControllers();
+
+await app.MigrateDatabaseAsync();
 
 app.Run();
