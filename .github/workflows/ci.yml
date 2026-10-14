@@ -1,0 +1,30 @@
+name: CI Build Verification
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build Klario.PL
+        run: dotnet build src/Klario/Klario.PL/Klario.PL.csproj -c Release
+
+      - name: Build Klario.Console
+        run: dotnet build src/Klario/Klario.Console/Klario.Console.csproj -c Release

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+if [ "$SKIP_HOOK" = "1" ]; then
+    exit 0
+fi
+
+echo "==> Validating solution compilation before push..."
+
+dotnet build src/Klario/Klario.PL/Klario.PL.csproj -c Release
+if [ $? -ne 0 ]; then
+    echo "ERROR: Klario.PL build failed! Push aborted."
+    exit 1
+fi
+
+dotnet build src/Klario/Klario.Console/Klario.Console.csproj -c Release
+if [ $? -ne 0 ]; then
+    echo "ERROR: Klario.Console build failed! Push aborted."
+    exit 1
+fi
+
+echo "==> Build verification passed."
+exit 0
