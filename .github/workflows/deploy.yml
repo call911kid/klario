@@ -1,0 +1,164 @@
+name: Deploy to MonsterASP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: monsterasp-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish application
+        run: dotnet publish src/Klario/Klario.PL/Klario.PL.csproj -c Release -o ./publish
+
+      - name: Generate production configuration
+        shell: bash
+        env:
+          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+          API_KEY: ${{ secrets.API_KEY }}
+          CONSOLE_ENABLED: ${{ secrets.CONSOLE_ENABLED }}
+          APP_SETTINGS_JSON: ${{ secrets.APP_SETTINGS_JSON }}
+        run: |
+          CONSOLE_FLAG="${CONSOLE_ENABLED:-true}"
+          if [ -n "$APP_SETTINGS_JSON" ]; then
+            printf "%s" "$APP_SETTINGS_JSON" > ./publish/appsettings.json
+          else
+            cat <<EOF > ./publish/appsettings.json
+          {
+            "ConnectionStrings": {
+              "DefaultConnection": "$CONNECTION_STRING"
+            },
+            "Logging": {
+              "LogLevel": {
+                "Default": "Information",
+                "Microsoft.AspNetCore": "Warning"
+              }
+            },
+            "Authentication": {
+              "ApiKey": "$API_KEY"
+            },
+            "Console": {
+              "Enabled": $CONSOLE_FLAG
+            }
+          }
+          EOF
+          fi
+          cp ./publish/appsettings.json ./publish/appsettings.Production.json
+
+      - name: Stage offline sentinel
+        shell: bash
+        run: |
+          mkdir -p ./app_offline_dir
+          cat <<EOF > ./app_offline_dir/app_offline.htm
+          <!DOCTYPE html>
+          <html>
+          <head><title>Site Updating</title></head>
+          <body><h2>Service temporarily offline for deployment. Please retry shortly.</h2></body>
+          </html>
+          EOF
+
+      - name: Take application offline
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        continue-on-error: true
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /wwwroot/
+          local-dir: ./app_offline_dir/
+          protocol: ftp
+          port: 21
+
+      - name: Await process termination
+        run: sleep 5
+
+      - name: Upload application payload
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /wwwroot/
+          local-dir: ./publish/
+          protocol: ftp
+          port: 21
+          dangerous-clean-slate: false
+
+      - name: Bring application online
+        shell: python
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: /wwwroot/
+          FTP_PROTOCOL: ftp
+          FTP_PORT: 21
+        run: |
+          import os
+          from ftplib import FTP, FTP_TLS
+
+          server = os.environ['FTP_SERVER']
+          user = os.environ['FTP_USERNAME']
+          passwd = os.environ['FTP_PASSWORD']
+          server_dir = os.environ.get('FTP_SERVER_DIR', '/wwwroot/').strip('/')
+          protocol = os.environ.get('FTP_PROTOCOL', 'ftp').lower()
+          port = int(os.environ.get('FTP_PORT', 21))
+
+          ftp_cls = FTP_TLS if protocol in ('ftps', 'tls') else FTP
+          try:
+              with ftp_cls(timeout=30) as ftp:
+                  ftp.connect(server, port)
+                  ftp.login(user, passwd)
+                  if protocol in ('ftps', 'tls'):
+                      ftp.prot_p()
+                  if server_dir:
+                      ftp.cwd(server_dir)
+                  try:
+                      ftp.delete('app_offline.htm')
+                  except Exception:
+                      pass
+          except Exception:
+              pass
+
+      - name: Verify application health
+        shell: bash
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            exit 0
+          fi
+          TARGET_URL="${APP_URL%/}/api/health"
+          for i in {1..12}; do
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "$TARGET_URL" || true)
+            if [ "$STATUS" = "200" ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Purge execution logs
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X DELETE "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs" || true
