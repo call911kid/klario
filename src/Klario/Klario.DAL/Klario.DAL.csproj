@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Klario.Common\Klario.Common.csproj" />
+    <ProjectReference Include="../Klario.Common/Klario.Common.csproj" />
   </ItemGroup>
 
 </Project>
