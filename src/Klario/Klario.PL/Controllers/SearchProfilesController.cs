@@ -1,8 +1,7 @@
 using AutoMapper;
 using Klario.BLL.Commands.SearchProfiles;
 using Klario.BLL.Queries.SearchProfiles;
-using Klario.PL.DTOs.Requests;
-using Klario.PL.DTOs.Responses;
+using Klario.PL.Contracts.SearchProfiles;
 using Klario.PL.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -25,20 +24,20 @@ public class SearchProfilesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateSearchProfileRequestDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateSearchProfileRequest request)
     {
         var command = new CreateSearchProfileCommand(
-            dto.Name,
-            dto.Description,
-            dto.TargetJobTitles,
-            dto.TargetLocations,
-            dto.MaxPostingAgeMinutes,
-            dto.IntervalMinutes,
-            dto.Workplace,
-            dto.Experience,
-            dto.JobType,
-            dto.TelegramChatId,
-            dto.BotToken
+            request.Name,
+            request.Description,
+            request.TargetJobTitles,
+            request.TargetLocations,
+            request.MaxPostingAgeMinutes,
+            request.IntervalMinutes,
+            request.Workplace,
+            request.Experience,
+            request.JobType,
+            request.TelegramChatId,
+            request.BotToken
         );
 
         var id = await _mediator.Send(command);
@@ -51,9 +50,9 @@ public class SearchProfilesController : ControllerBase
     {
         var query = new GetAllSearchProfilesQuery();
         var responses = await _mediator.Send(query);
-        var responseDtos = _mapper.Map<List<SearchProfileResponseDto>>(responses);
+        var result = _mapper.Map<List<SearchProfileResponse>>(responses);
 
-        return Ok(ApiResponse.Success(responseDtos));
+        return Ok(ApiResponse.Success(result));
     }
 
     [HttpGet("{id:guid}")]
@@ -61,28 +60,28 @@ public class SearchProfilesController : ControllerBase
     {
         var query = new GetSearchProfileByIdQuery(id);
         var response = await _mediator.Send(query);
-        var responseDto = _mapper.Map<SearchProfileResponseDto>(response);
+        var result = _mapper.Map<SearchProfileResponse>(response);
 
-        return Ok(ApiResponse.Success(responseDto));
+        return Ok(ApiResponse.Success(result));
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSearchProfileRequestDto dto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSearchProfileRequest request)
     {
         var command = new UpdateSearchProfileCommand(
             id,
-            dto.Name,
-            dto.Description,
-            dto.IsActive,
-            dto.TargetJobTitles,
-            dto.TargetLocations,
-            dto.MaxPostingAgeMinutes,
-            dto.IntervalMinutes,
-            dto.Workplace,
-            dto.Experience,
-            dto.JobType,
-            dto.TelegramChatId,
-            dto.BotToken
+            request.Name,
+            request.Description,
+            request.IsActive,
+            request.TargetJobTitles,
+            request.TargetLocations,
+            request.MaxPostingAgeMinutes,
+            request.IntervalMinutes,
+            request.Workplace,
+            request.Experience,
+            request.JobType,
+            request.TelegramChatId,
+            request.BotToken
         );
 
         await _mediator.Send(command);
