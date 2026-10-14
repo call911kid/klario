@@ -1,5 +1,6 @@
 using AutoMapper;
 using Klario.BLL.Commands.SearchProfiles;
+using Klario.BLL.Responses;
 using Klario.PL.DTOs.Requests;
 using Klario.PL.DTOs.Responses;
 
@@ -13,5 +14,6 @@ public class SearchProfileDtoMappingProfile : Profile
         CreateMap<UpdateSearchProfileRequestDto, UpdateSearchProfileCommand>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
+        CreateMap<SearchProfileResponse, SearchProfileResponseDto>();
     }
 }

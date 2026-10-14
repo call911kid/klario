@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.SqlServer;
+using Klario.BLL.DI;
 using Klario.BLL.Interfaces;
 using Klario.BLL.Services;
 using Klario.DAL.Context;
@@ -33,21 +34,11 @@ builder.Services.AddControllers()
 builder.Services.AddDbContext<KlarioDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register MediatR
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(Klario.BLL.IAssemblyMarker).Assembly));
+// Register Business Logic (MediatR, Services, Matching)
+builder.Services.AddBusinessLogic();
 
 // Register AutoMapper
-builder.Services.AddAutoMapper(cfg => { }, typeof(Klario.BLL.IAssemblyMarker).Assembly, typeof(Program).Assembly);
-
-// Register Telegram Service
-builder.Services.AddHttpClient<ITelegramService, TelegramService>();
-
-// Register Alert Formatter
-builder.Services.AddScoped<IPostingAlertFormatter, TelegramPostingAlertFormatter>();
-
-// Register Posting Matcher
-builder.Services.AddScoped<IPostingMatcher, PostingMatcher>();
+builder.Services.AddAutoMapper(cfg => { }, typeof(Klario.BLL.DI.DependencyInjection).Assembly, typeof(Program).Assembly);
 
 // Register Posting Providers
 builder.Services.AddLinkedInProvider();
