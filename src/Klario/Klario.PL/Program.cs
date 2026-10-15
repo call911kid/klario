@@ -5,12 +5,14 @@ using Klario.BLL.Interfaces;
 using Klario.BLL.Services;
 using Klario.DAL.Context;
 using Klario.PL.Authentication;
+using Klario.PL.Configuration;
 using Klario.PL.Extensions;
 using Klario.PL.Middleware;
 using Klario.PL.Services;
 using Klario.Providers.DI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +83,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Bind Strongly-Typed Configuration Options
+builder.AddAppConfiguration();
+
 // Register Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -101,7 +106,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-if (app.Configuration.GetValue<bool>("Console:Enabled", true))
+var consoleOptions = app.Services.GetRequiredService<IOptions<ConsoleOptions>>().Value;
+if (consoleOptions.Enabled)
 {
     app.UseDefaultFiles();
     app.UseStaticFiles();
