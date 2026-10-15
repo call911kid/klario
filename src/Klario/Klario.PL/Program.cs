@@ -1,3 +1,4 @@
+using AutoMapper;
 using Hangfire;
 using Hangfire.SqlServer;
 using Klario.BLL.DI;
@@ -102,6 +103,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseHangfireDashboard("/hangfire");
+    app.Services.GetRequiredService<IMapper>().ConfigurationProvider.AssertConfigurationIsValid();
 }
 
 app.UseHttpsRedirection();
