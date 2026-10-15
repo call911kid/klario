@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Klario.PL.Configuration;
 using Klario.PL.Constants;
 using Klario.PL.Responses;
 using Microsoft.AspNetCore.Authentication;
@@ -18,16 +19,16 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
 
 public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
 {
-    private readonly IConfiguration _configuration;
+    private readonly ApiAuthenticationOptions _authOptions;
 
     public ApiKeyAuthenticationHandler(
         IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        IConfiguration configuration)
+        IOptions<ApiAuthenticationOptions> authOptions)
         : base(options, logger, encoder)
     {
-        _configuration = configuration;
+        _authOptions = authOptions.Value;
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -37,7 +38,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var configuredKey = _configuration["Authentication:ApiKey"];
+        var configuredKey = _authOptions.ApiKey;
         if (string.IsNullOrEmpty(configuredKey) || !string.Equals(configuredKey, extractedApiKey))
         {
             return Task.FromResult(AuthenticateResult.Fail("Invalid API key."));
