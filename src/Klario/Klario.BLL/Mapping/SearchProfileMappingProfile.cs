@@ -12,7 +12,8 @@ public class SearchProfileMappingProfile : Profile
         CreateMap<CreateSearchProfileCommand, SearchProfile>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+            .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore());
 
         CreateMap<UpdateSearchProfileCommand, SearchProfile>()
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
