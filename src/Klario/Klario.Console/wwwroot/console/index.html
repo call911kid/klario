@@ -173,11 +173,23 @@
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="field flex-1">
-                                <label for="profileInterval">Scrape Interval (Minutes)</label>
-                                <input type="number" id="profileInterval" value="15" min="1" required>
+                        <div class="field">
+                            <label>Provider Scraping Schedules</label>
+                            <div class="schedules-container" id="schedulesContainer">
+                                <div class="schedule-card" data-source="LinkedIn">
+                                    <label class="pill-check">
+                                        <input type="checkbox" id="schedule_LinkedIn_enabled" checked>
+                                        <span>LinkedIn</span>
+                                    </label>
+                                    <div class="schedule-body">
+                                        <label for="schedule_LinkedIn_interval">Interval (Min):</label>
+                                        <input type="number" id="schedule_LinkedIn_interval" value="15" min="1" required>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="form-row">
                             <div class="field flex-1">
                                 <label for="profileMaxAge">Max Age (Minutes)</label>
                                 <input type="number" id="profileMaxAge" value="1440" min="1" required>

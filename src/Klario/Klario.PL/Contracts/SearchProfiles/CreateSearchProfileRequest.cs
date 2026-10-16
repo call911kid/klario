@@ -8,7 +8,6 @@ public sealed record CreateSearchProfileRequest(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     int MaxPostingAgeMinutes = 1440,
-    int IntervalMinutes = 15,
     WorkplacePreference Workplace = WorkplacePreference.Remote,
     ExperienceLevel Experience = ExperienceLevel.MidLevel,
     JobType JobType = JobType.FullTime,

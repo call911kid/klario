@@ -25,6 +25,7 @@ public class DeleteSearchProfileCommandHandler : IRequestHandler<DeleteSearchPro
     public async Task<bool> Handle(DeleteSearchProfileCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.SearchProfiles
+            .Include(sp => sp.Schedules)
             .FirstOrDefaultAsync(sp => sp.Id == request.Id, cancellationToken);
 
         if (entity is null)
@@ -35,7 +36,10 @@ public class DeleteSearchProfileCommandHandler : IRequestHandler<DeleteSearchPro
         entity.IsDeleted = true;
         await _context.SaveChangesAsync(cancellationToken);
 
-        _scheduleManager.RemoveRecurringIngestion(request.Id);
+        foreach (var s in entity.Schedules)
+        {
+            _scheduleManager.RemoveRecurringIngestion(request.Id, s.Source);
+        }
 
         return true;
     }

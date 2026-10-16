@@ -81,6 +81,30 @@ namespace Klario.DAL.Migrations
                     b.ToTable("JobPostings");
                 });
 
+            modelBuilder.Entity("Klario.DAL.Models.Schedule", b =>
+                {
+                    b.Property<Guid>("SearchProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("IntervalMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(15);
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.HasKey("SearchProfileId", "Source");
+
+                    b.ToTable("Schedules", (string)null);
+                });
+
             modelBuilder.Entity("Klario.DAL.Models.SearchProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -103,9 +127,6 @@ namespace Klario.DAL.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("IntervalMinutes")
-                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -149,6 +170,22 @@ namespace Klario.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SearchProfiles");
+                });
+
+            modelBuilder.Entity("Klario.DAL.Models.Schedule", b =>
+                {
+                    b.HasOne("Klario.DAL.Models.SearchProfile", "SearchProfile")
+                        .WithMany("Schedules")
+                        .HasForeignKey("SearchProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SearchProfile");
+                });
+
+            modelBuilder.Entity("Klario.DAL.Models.SearchProfile", b =>
+                {
+                    b.Navigation("Schedules");
                 });
 #pragma warning restore 612, 618
         }

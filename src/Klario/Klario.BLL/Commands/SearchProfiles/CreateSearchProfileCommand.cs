@@ -1,5 +1,4 @@
 using AutoMapper;
-using Klario.BLL.Interfaces;
 using Klario.DAL.Context;
 using Klario.Common.Enums;
 using Klario.DAL.Models;
@@ -13,7 +12,6 @@ public record CreateSearchProfileCommand(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     int MaxPostingAgeMinutes,
-    int IntervalMinutes,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
     JobType JobType,
@@ -25,16 +23,13 @@ public class CreateSearchProfileCommandHandler : IRequestHandler<CreateSearchPro
 {
     private readonly KlarioDbContext _context;
     private readonly IMapper _mapper;
-    private readonly IPostingScheduleManager _scheduleManager;
 
     public CreateSearchProfileCommandHandler(
         KlarioDbContext context,
-        IMapper mapper,
-        IPostingScheduleManager scheduleManager)
+        IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
-        _scheduleManager = scheduleManager;
     }
 
     public async Task<Guid> Handle(CreateSearchProfileCommand request, CancellationToken cancellationToken)
@@ -44,8 +39,6 @@ public class CreateSearchProfileCommandHandler : IRequestHandler<CreateSearchPro
 
         _context.SearchProfiles.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
-
-        _scheduleManager.ScheduleRecurringIngestion(entity.Id, entity.IntervalMinutes);
 
         return entity.Id;
     }

@@ -5,11 +5,9 @@ namespace Klario.PL.Contracts.SearchProfiles;
 public sealed record UpdateSearchProfileRequest(
     string Name,
     string? Description,
-    bool IsActive,
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     int MaxPostingAgeMinutes = 1440,
-    int IntervalMinutes = 15,
     WorkplacePreference Workplace = WorkplacePreference.Remote,
     ExperienceLevel Experience = ExperienceLevel.MidLevel,
     JobType JobType = JobType.FullTime,

@@ -126,5 +126,6 @@ app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
 app.MapControllers();
 
 await app.MigrateDatabaseAsync();
+await app.InitHangfireSchedulesAsync();
 
 app.Run();

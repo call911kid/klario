@@ -68,7 +68,8 @@
     const locationInput = document.getElementById('locationInput');
     const locationTagsContainer = document.getElementById('locationTags');
 
-    const intervalInput = document.getElementById('profileInterval');
+    const scheduleLinkedInEnabled = document.getElementById('schedule_LinkedIn_enabled');
+    const scheduleLinkedInInterval = document.getElementById('schedule_LinkedIn_interval');
     const maxAgeInput = document.getElementById('profileMaxAge');
     const chatIdInput = document.getElementById('telegramChatId');
     const botTokenInput = document.getElementById('botToken');
@@ -638,7 +639,20 @@
         setSelectedOptions('experienceGroup', p.experience);
         setSelectedOptions('jobTypeGroup', p.jobType);
 
-        intervalInput.value = p.intervalMinutes || 15;
+        if (p.schedules && p.schedules.length > 0) {
+            const li = p.schedules.find(s => s.source === 'LinkedIn');
+            if (li) {
+                scheduleLinkedInEnabled.checked = li.isEnabled;
+                scheduleLinkedInInterval.value = li.intervalMinutes || 15;
+            } else {
+                scheduleLinkedInEnabled.checked = false;
+                scheduleLinkedInInterval.value = 15;
+            }
+        } else {
+            scheduleLinkedInEnabled.checked = true;
+            scheduleLinkedInInterval.value = 15;
+        }
+
         maxAgeInput.value = p.maxPostingAgeMinutes || 1440;
         chatIdInput.value = p.telegramChatId || '';
         botTokenInput.value = p.botToken || '';
@@ -662,7 +676,8 @@
         botTokenInput.type = 'password';
         toggleBotTokenBtn.innerHTML = ICONS.eye;
 
-        intervalInput.value = 15;
+        scheduleLinkedInEnabled.checked = true;
+        scheduleLinkedInInterval.value = 15;
         maxAgeInput.value = 1440;
         setSelectedOptions('workplaceGroup', 'Remote');
         setSelectedOptions('experienceGroup', 'MidLevel');
@@ -705,7 +720,6 @@
         const workplace = getSelectedOptions('workplaceGroup');
         const experience = getSelectedOptions('experienceGroup');
         const jobType = getSelectedOptions('jobTypeGroup');
-        const intervalMinutes = parseInt(intervalInput.value, 10) || 15;
         const maxPostingAgeMinutes = parseInt(maxAgeInput.value, 10) || 1440;
         const telegramChatId = chatIdInput.value.trim();
         const botToken = botTokenInput.value.trim();
@@ -716,7 +730,6 @@
             targetJobTitles,
             targetLocations,
             maxPostingAgeMinutes,
-            intervalMinutes,
             workplace,
             experience,
             jobType,
@@ -724,18 +737,45 @@
             botToken
         };
 
+        const linkedInInterval = parseInt(scheduleLinkedInInterval.value, 10) || 15;
+        const linkedInEnabled = scheduleLinkedInEnabled.checked;
+
         if (id) {
-            payload.isActive = activeInput.checked;
             const res = await apiRequest('PUT', `/api/SearchProfiles/${id}`, payload);
             if (res) {
+                const currentProfile = state.profiles.find(p => p.id === id);
+                if (currentProfile && currentProfile.isActive !== activeInput.checked) {
+                    await apiRequest('PUT', `/api/SearchProfiles/${id}/status`, {
+                        isActive: activeInput.checked
+                    });
+                }
+                await apiRequest('PUT', `/api/search-profiles/${id}/schedules/LinkedIn`, {
+                    intervalMinutes: linkedInInterval
+                });
+                if (!linkedInEnabled) {
+                    await apiRequest('PUT', `/api/search-profiles/${id}/schedules/LinkedIn/status`, {
+                        isEnabled: false
+                    });
+                }
                 showToast('Profile updated');
                 await loadProfiles();
             }
         } else {
             const res = await apiRequest('POST', '/api/SearchProfiles', payload);
             if (res) {
+                const newId = res.data || res.id;
+                if (newId) {
+                    await apiRequest('PUT', `/api/search-profiles/${newId}/schedules/LinkedIn`, {
+                        intervalMinutes: linkedInInterval
+                    });
+                    if (!linkedInEnabled) {
+                        await apiRequest('PUT', `/api/search-profiles/${newId}/schedules/LinkedIn/status`, {
+                            isEnabled: false
+                        });
+                    }
+                    state.selectedId = newId;
+                }
                 showToast('Profile created');
-                if (res.id) state.selectedId = res.id;
                 await loadProfiles();
             }
         }
