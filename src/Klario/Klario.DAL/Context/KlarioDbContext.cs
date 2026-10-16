@@ -16,7 +16,7 @@ public class KlarioDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Automatically applies SearchProfileConfiguration
+        // Automatically applies configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(KlarioDbContext).Assembly);
     }
 }

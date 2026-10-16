@@ -1,6 +1,6 @@
 using AutoMapper;
+using Klario.BLL.Queries.SearchProfiles;
 using Klario.PL.Contracts.SearchProfiles;
-using BllResponse = Klario.BLL.Responses.SearchProfileResponse;
 
 namespace Klario.PL.Mapping;
 
@@ -8,6 +8,10 @@ public class SearchProfileMappingProfile : Profile
 {
     public SearchProfileMappingProfile()
     {
-        CreateMap<BllResponse, SearchProfileResponse>();
+        CreateMap<GetAllSearchProfilesScheduleResponse, ScheduleResponse>();
+        CreateMap<GetAllSearchProfilesResponse, SearchProfileResponse>();
+
+        CreateMap<GetSearchProfileByIdScheduleResponse, ScheduleResponse>();
+        CreateMap<GetSearchProfileByIdResponse, SearchProfileResponse>();
     }
 }

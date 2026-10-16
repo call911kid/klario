@@ -32,7 +32,6 @@ public class SearchProfilesController : ControllerBase
             request.TargetJobTitles,
             request.TargetLocations,
             request.MaxPostingAgeMinutes,
-            request.IntervalMinutes,
             request.Workplace,
             request.Experience,
             request.JobType,
@@ -72,11 +71,9 @@ public class SearchProfilesController : ControllerBase
             id,
             request.Name,
             request.Description,
-            request.IsActive,
             request.TargetJobTitles,
             request.TargetLocations,
             request.MaxPostingAgeMinutes,
-            request.IntervalMinutes,
             request.Workplace,
             request.Experience,
             request.JobType,
@@ -84,6 +81,15 @@ public class SearchProfilesController : ControllerBase
             request.BotToken
         );
 
+        await _mediator.Send(command);
+
+        return Ok(ApiResponse.Success());
+    }
+
+    [HttpPut("{id:guid}/status")]
+    public async Task<IActionResult> SetStatus(Guid id, [FromBody] SetSearchProfileStatusRequest request)
+    {
+        var command = new SetSearchProfileStatusCommand(id, request.IsActive);
         await _mediator.Send(command);
 
         return Ok(ApiResponse.Success());

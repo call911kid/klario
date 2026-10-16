@@ -10,7 +10,7 @@ public sealed record SearchProfileResponse(
     List<string> TargetJobTitles,
     List<string> TargetLocations,
     int MaxPostingAgeMinutes,
-    int IntervalMinutes,
+    List<ScheduleResponse> Schedules,
     WorkplacePreference Workplace,
     ExperienceLevel Experience,
     JobType JobType,
