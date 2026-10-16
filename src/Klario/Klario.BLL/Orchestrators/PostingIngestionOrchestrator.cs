@@ -1,5 +1,6 @@
 using Klario.BLL.Commands.JobPostings;
 using Klario.BLL.Interfaces;
+using Klario.BLL.Queries.ExcludedCompanies;
 using Klario.BLL.Queries.JobPostings;
 using Klario.Common.Enums;
 using Klario.DAL.Context;
@@ -81,6 +82,26 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
 
         if (newPostings.Count == 0)
             return;
+
+        var candidateCompanies = newPostings
+            .Select(p => p.Company)
+            .Distinct()
+            .ToList();
+
+        var excludedCompaniesQuery = new GetExcludedCompaniesQuery(candidateCompanies);
+        var excludedCompanies = await _mediator.Send(excludedCompaniesQuery, cancellationToken);
+
+        if (excludedCompanies.Count > 0)
+        {
+            var excludedNames = excludedCompanies
+                .Select(ec => ec.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            newPostings.RemoveAll(p => excludedNames.Contains(p.Company.Trim().ToLowerInvariant()));
+
+            if (newPostings.Count == 0)
+                return;
+        }
 
         var createCommand = new CreateJobPostingsCommand(newPostings);
         await _mediator.Send(createCommand, cancellationToken);
