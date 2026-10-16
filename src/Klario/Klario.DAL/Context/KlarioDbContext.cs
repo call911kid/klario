@@ -11,6 +11,7 @@ public class KlarioDbContext : DbContext
 
     public DbSet<SearchProfile> SearchProfiles => Set<SearchProfile>();
     public DbSet<JobPosting> JobPostings => Set<JobPosting>();
+    public DbSet<ExcludedCompany> ExcludedCompanies => Set<ExcludedCompany>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
