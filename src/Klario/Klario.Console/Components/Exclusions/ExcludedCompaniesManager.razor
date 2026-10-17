@@ -1,0 +1,44 @@
+@namespace Klario.Console.Components.Exclusions
+
+<div class="p-6 sm:p-8 max-w-3xl mx-auto w-full">
+    <h2 class="text-base font-bold text-slate-900 mb-1">Excluded Companies</h2>
+    <p class="text-xs text-slate-500 mb-5">
+        Postings originating from these companies are silently discarded during scraping.
+    </p>
+
+    <div class="flex gap-2 mb-6">
+        <input class="flex-1 text-xs px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0f766e]" 
+               placeholder="Company name to exclude..." 
+               @bind="newCompanyName" 
+               @bind:event="oninput" 
+               @onkeydown="HandleCompanyKeyDown" />
+        <button type="button" 
+                class="text-xs px-4 py-2 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold shadow-xs transition-colors cursor-pointer" 
+                @onclick="AddExcludedCompanyAsync">
+            Exclude
+        </button>
+    </div>
+
+    @if (State.ExcludedCompanies.Count == 0)
+    {
+        <div class="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl font-mono">
+            No companies are currently excluded.
+        </div>
+    }
+    else
+    {
+        <div class="flex flex-wrap gap-2">
+            @foreach (var company in State.ExcludedCompanies)
+            {
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 shadow-xs" @key="company.Id">
+                    <span class="font-medium">@company.Name</span>
+                    <button type="button" 
+                            class="text-slate-400 hover:text-rose-500 font-bold ml-1 leading-none cursor-pointer" 
+                            @onclick="() => State.DeleteExcludedCompanyAsync(company.Id)">
+                        ✕
+                    </button>
+                </span>
+            }
+        </div>
+    }
+</div>

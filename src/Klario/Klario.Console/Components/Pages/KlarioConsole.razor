@@ -1,0 +1,35 @@
+@page "/"
+@page "/console"
+@rendermode InteractiveServer
+
+@if (!State.IsUnlocked)
+{
+    <div class="relative min-h-screen bg-[#F1F5F9] text-slate-800 antialiased p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden">
+        <canvas id="loginTopoCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+        <AuthGate OnUnlocked="HandleUnlockedAsync" />
+    </div>
+}
+else
+{
+    <div class="relative min-h-screen bg-[#F1F5F9] text-slate-800 antialiased p-3 sm:p-6 flex flex-col items-center justify-center overflow-x-hidden">
+        <canvas id="homeTopoCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+        <div class="relative z-10 w-full max-w-6xl bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col my-auto">
+            <ConsoleHeader OnLocked="HandleLockedAsync" />
+
+            @if (State.ActiveTab == "profiles")
+            {
+                <div class="grid grid-cols-1 md:grid-cols-12 min-h-[580px]">
+                    <ChannelList />
+                    <ChannelEditor Profile="@State.SelectedProfile" />
+                </div>
+            }
+            else
+            {
+                <ExcludedCompaniesManager />
+            }
+        </div>
+    </div>
+}
+
+<ToastAlert />

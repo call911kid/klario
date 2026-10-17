@@ -1,0 +1,49 @@
+@namespace Klario.Console.Components.Profiles
+
+<aside class="md:col-span-4 bg-white border-r border-slate-200 p-3.5 flex flex-col">
+    <div class="flex items-center justify-between mb-2.5 px-0.5">
+        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Channels</span>
+        <button type="button" 
+                class="text-xs px-2.5 py-1 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold transition-colors shadow-xs flex items-center gap-1 cursor-pointer" 
+                @onclick="CreateNewChannel">
+            + New Channel
+        </button>
+    </div>
+
+    <div class="mb-3">
+        <input class="w-full text-xs px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e] focus:bg-white transition-all" 
+               placeholder="Filter channels..." 
+               value="@State.SearchFilter" 
+               @oninput="OnFilterInput" />
+    </div>
+
+    <div class="space-y-1.5 flex-1 overflow-y-auto">
+        @if (State.FilteredProfiles.Count == 0)
+        {
+            <div class="p-6 text-center text-xs text-slate-400 font-mono">
+                No channels found.
+            </div>
+        }
+        else
+        {
+            @foreach (var profile in State.FilteredProfiles)
+            {
+                var isSelected = State.SelectedProfile?.Id == profile.Id;
+                var activeSources = profile.Schedules.Count(s => s.IsEnabled);
+                var roleCount = profile.TargetJobTitles.Count;
+
+                <div class="p-3 rounded-xl border transition-all cursor-pointer @(isSelected ? "border-[#99f6e4] bg-[#f0fdfa]/80 shadow-xs" : "border-transparent hover:bg-slate-50")" 
+                     @key="profile.Id"
+                     @onclick="() => State.SelectProfile(profile)">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-xs @(isSelected ? "text-[#134e4a]" : "text-slate-800")">@profile.Name</span>
+                        <span class="w-2 h-2 rounded-full @(profile.IsActive ? "bg-[#0f766e]" : "bg-slate-300")"></span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-mono">
+                        <span>@profile.Workplace</span> · <span>@activeSources @(activeSources == 1 ? "source" : "sources")</span> · <span>@roleCount @(roleCount == 1 ? "role" : "roles")</span>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</aside>

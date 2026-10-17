@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,16 +23,10 @@
   <ItemGroup>
     <ProjectReference Include="../Klario.BLL/Klario.BLL.csproj" />
     <ProjectReference Include="../Klario.Common/Klario.Common.csproj" />
+    <ProjectReference Include="../Klario.Console/Klario.Console.csproj" />
     <ProjectReference Include="../Klario.DAL/Klario.DAL.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="../Klario.Console/wwwroot/**/*">
-      <Link>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
 
   <Target Name="EnsureWwwroot" BeforeTargets="Build">
     <MakeDir Directories="$(MSBuildProjectDirectory)/wwwroot" Condition="!Exists('$(MSBuildProjectDirectory)/wwwroot')" />

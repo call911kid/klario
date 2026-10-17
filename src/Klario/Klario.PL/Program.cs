@@ -7,13 +7,13 @@ using Klario.BLL.Services;
 using Klario.DAL.Context;
 using Klario.PL.Authentication;
 using Klario.PL.Configuration;
+using Klario.Console.Extensions;
 using Klario.PL.Extensions;
 using Klario.PL.Middleware;
 using Klario.PL.Services;
 using Klario.Providers.DI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +50,9 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(Klario.BLL.DI.DependencyInject
 
 // Register Posting Providers
 builder.Services.AddLinkedInProvider();
+
+// Register Klario Console
+builder.Services.AddKlarioConsole();
 
 // Register Hangfire
 builder.Services.AddHangfire(configuration => configuration
@@ -107,23 +110,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-var consoleOptions = app.Services.GetRequiredService<IOptions<ConsoleOptions>>().Value;
-if (consoleOptions.Enabled)
-{
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-}
-
 app.UseCors();
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 app.MapGet("/api/health", () => Results.Ok("Healthy")).AllowAnonymous();
-
 app.MapControllers();
+app.MapKlarioConsole();
 
 await app.MigrateDatabaseAsync();
 await app.InitHangfireSchedulesAsync();
