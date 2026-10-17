@@ -1,0 +1,32 @@
+@namespace Klario.Console.Components.Layout
+
+<header class="bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#0f766e]"></span>
+            <span class="font-bold text-sm tracking-wide text-slate-900">KLARIO</span>
+        </div>
+        <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-semibold">
+            <button type="button" 
+                    class="px-3 py-1 rounded-md transition-all cursor-pointer @(State.ActiveTab == "profiles" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-700")"
+                    @onclick='() => State.SetActiveTab("profiles")'>
+                Channels (@State.Profiles.Count)
+            </button>
+            <button type="button" 
+                    class="px-3 py-1 rounded-md transition-all cursor-pointer @(State.ActiveTab == "exclusions" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-700")"
+                    @onclick='() => State.SetActiveTab("exclusions")'>
+                Excluded (@State.ExcludedCompanies.Count)
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <button type="button" 
+                class="text-xs px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-mono transition-colors flex items-center gap-1.5 cursor-pointer" 
+                title="Lock Console" 
+                @onclick="HandleLockAsync">
+            <span>Lock</span>
+            <span class="text-xs">⏻</span>
+        </button>
+    </div>
+</header>

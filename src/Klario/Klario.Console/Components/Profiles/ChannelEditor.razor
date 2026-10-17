@@ -1,0 +1,380 @@
+@namespace Klario.Console.Components.Profiles
+
+<main class="md:col-span-8 bg-white overflow-y-auto">
+    @if (Profile is not null)
+    {
+        <div class="p-5 sm:p-6 space-y-5">
+            <div class="flex items-center justify-between pb-3.5 border-b border-slate-200">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full @(Profile.IsActive ? "bg-[#0f766e]" : "bg-slate-400")"></span>
+                    <span class="text-xs font-semibold text-slate-800">
+                        @(Profile.IsActive ? "Active" : "Paused")
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-400">· @Profile.FormatCreatedAt()</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    @if (Profile.Id != Guid.Empty)
+                    {
+                        <button type="button" 
+                                class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors cursor-pointer" 
+                                @onclick="ToggleActiveStatusAsync">
+                            @(Profile.IsActive ? "Pause" : "Resume")
+                        </button>
+                        <button type="button" 
+                                class="text-xs px-3 py-1.5 text-rose-600 font-medium hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" 
+                                @onclick="DeleteCurrentProfileAsync">
+                            Delete
+                        </button>
+                    }
+                    <button type="button" 
+                            class="text-xs px-3.5 py-1.5 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold transition-colors shadow-xs cursor-pointer" 
+                            @onclick="SaveCurrentProfileAsync">
+                        Save Channel
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pb-4 border-b border-slate-200">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-800 mb-1">Channel Name <span class="text-rose-500">*</span></label>
+                    <input class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-300 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e] focus:border-[#0f766e] transition-all" 
+                           @bind="Profile.Name" 
+                           placeholder="e.g. Lead .NET Platform Architect" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-800 mb-1">Description & Strategy Notes</label>
+                    <input class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e] focus:border-[#0f766e] transition-all" 
+                           @bind="Profile.Description" 
+                           placeholder="e.g. Remote EMEA, Staff/Lead tier, immediate alerts..." />
+                </div>
+            </div>
+
+            <div class="space-y-4 pb-4 border-b border-slate-200">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Roles & Locations</div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-semibold text-slate-800">Target Roles <span class="text-rose-500">*</span></span>
+                            <div class="relative group cursor-pointer inline-flex items-center">
+                                <span class="w-3.5 h-3.5 rounded-full border border-slate-300 text-slate-500 hover:text-teal-700 hover:border-teal-600 text-[10px] font-bold inline-flex items-center justify-center leading-none">i</span>
+                                <div class="absolute left-5 -top-2 z-50 hidden group-hover:block w-72 p-2.5 bg-slate-900 text-white text-[11px] rounded-lg shadow-lg border border-slate-800 leading-relaxed font-normal">
+                                    <strong>Literal matching:</strong> Keyword search treats variations separately without synonym expansion (e.g. <code class="text-teal-300">.NET</code> and <code class="text-teal-300">dot net</code> are distinct). Add both if you want to capture both.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-1 text-[11px] text-slate-400">
+                            @foreach (var sug in titleSuggestions)
+                            {
+                                <span class="hover:text-[#0f766e] cursor-pointer transition-colors" @onclick="() => AddTitleSuggestion(sug)">
+                                    + @sug
+                                </span>
+                                @if (sug != titleSuggestions[^1]) { <span>·</span> }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <input class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                               placeholder="Type role and press Enter..." 
+                               @bind="newTitleTag" 
+                               @bind:event="oninput" 
+                               @onkeydown="HandleTitleKeyDown" />
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 p-2 rounded-lg border border-slate-200 bg-slate-50 min-h-[38px] items-center">
+                        @if (Profile.TargetJobTitles.Count == 0)
+                        {
+                            <span class="text-[11px] text-slate-400 italic">No roles added yet.</span>
+                        }
+                        @foreach (var title in Profile.TargetJobTitles)
+                        {
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-xs font-mono text-slate-700 shadow-xs" @key="title">
+                                <span>@title</span>
+                                <button type="button" class="text-slate-400 hover:text-rose-500 font-bold ml-0.5 leading-none cursor-pointer" @onclick="() => Profile.TargetJobTitles.Remove(title)">×</button>
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-semibold text-slate-800">Target Locations <span class="text-rose-500">*</span></span>
+                        <div class="flex gap-1 text-[11px] text-slate-400">
+                            @foreach (var sug in locationSuggestions)
+                            {
+                                <span class="hover:text-[#0f766e] cursor-pointer transition-colors" @onclick="() => AddLocationSuggestion(sug)">
+                                    + @sug
+                                </span>
+                                @if (sug != locationSuggestions[^1]) { <span>·</span> }
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <input class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                               placeholder="Type location and press Enter..." 
+                               @bind="newLocationTag" 
+                               @bind:event="oninput" 
+                               @onkeydown="HandleLocationKeyDown" />
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 p-2 rounded-lg border border-slate-200 bg-slate-50 min-h-[38px] items-center">
+                        @if (Profile.TargetLocations.Count == 0)
+                        {
+                            <span class="text-[11px] text-slate-400 italic">No locations added yet.</span>
+                        }
+                        @foreach (var loc in Profile.TargetLocations)
+                        {
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-xs font-mono text-slate-700 shadow-xs" @key="loc">
+                                <span>@loc</span>
+                                <button type="button" class="text-slate-400 hover:text-rose-500 font-bold ml-0.5 leading-none cursor-pointer" @onclick="() => Profile.TargetLocations.Remove(loc)">×</button>
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3 pb-4 border-b border-slate-200">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Filters</div>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-2">
+                        <div class="sm:col-span-3 text-xs font-semibold text-slate-700">Workplace</div>
+                        <div class="sm:col-span-9 flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach (var wp in new[] { WorkplacePreference.Remote, WorkplacePreference.Hybrid, WorkplacePreference.Onsite })
+                                {
+                                    var isChecked = Profile.HasWorkplace(wp);
+                                    <button type="button" 
+                                            class="px-2.5 py-1 rounded-lg border text-xs transition-all flex items-center gap-1 cursor-pointer @(isChecked ? "border-[#0f766e] bg-[#f0fdfa] text-[#134e4a] font-semibold shadow-xs" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300")" 
+                                            @onclick="() => Profile.ToggleWorkplace(wp)">
+                                        <span>@(isChecked ? "✓" : "")</span>
+                                        <span>@wp</span>
+                                    </button>
+                                }
+                            </div>
+                            <div class="flex items-center gap-1 text-[10px] text-slate-400 font-mono whitespace-nowrap ml-auto">
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.SelectAllWorkplace">All</button>
+                                <span>·</span>
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.ClearWorkplace">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-2">
+                        <div class="sm:col-span-3 text-xs font-semibold text-slate-700">Seniority</div>
+                        <div class="sm:col-span-9 flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach (var exp in new[] { ExperienceLevel.Internship, ExperienceLevel.Junior, ExperienceLevel.MidLevel, ExperienceLevel.Senior, ExperienceLevel.Lead })
+                                {
+                                    var isChecked = Profile.HasExperience(exp);
+                                    <button type="button" 
+                                            class="px-2.5 py-1 rounded-lg border text-xs transition-all flex items-center gap-1 cursor-pointer @(isChecked ? "border-[#0f766e] bg-[#f0fdfa] text-[#134e4a] font-semibold shadow-xs" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300")" 
+                                            @onclick="() => Profile.ToggleExperience(exp)">
+                                        <span>@(isChecked ? "✓" : "")</span>
+                                        <span>@exp</span>
+                                    </button>
+                                }
+                            </div>
+                            <div class="flex items-center gap-1 text-[10px] text-slate-400 font-mono whitespace-nowrap ml-auto">
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.SelectAllExperience">All</button>
+                                <span>·</span>
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.ClearExperience">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-2">
+                        <div class="sm:col-span-3 text-xs font-semibold text-slate-700">Commitment</div>
+                        <div class="sm:col-span-9 flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach (var jt in new[] { JobType.FullTime, JobType.PartTime, JobType.Contract, JobType.Internship })
+                                {
+                                    var isChecked = Profile.HasJobType(jt);
+                                    <button type="button" 
+                                            class="px-2.5 py-1 rounded-lg border text-xs transition-all flex items-center gap-1 cursor-pointer @(isChecked ? "border-[#0f766e] bg-[#f0fdfa] text-[#134e4a] font-semibold shadow-xs" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300")" 
+                                            @onclick="() => Profile.ToggleJobType(jt)">
+                                        <span>@(isChecked ? "✓" : "")</span>
+                                        <span>@jt</span>
+                                    </button>
+                                }
+                            </div>
+                            <div class="flex items-center gap-1 text-[10px] text-slate-400 font-mono whitespace-nowrap ml-auto">
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.SelectAllJobType">All</button>
+                                <span>·</span>
+                                <button type="button" class="hover:text-[#0f766e] transition-colors cursor-pointer" @onclick="Profile.ClearJobType">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3 pb-4 border-b border-slate-200">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scraping Sources</div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    @{
+                        var linkedInSchedule = Profile.Schedules.FirstOrDefault(s => s.Source == PostingSource.LinkedIn);
+                        var isConnected = linkedInSchedule is not null;
+                        var isOnline = isConnected && linkedInSchedule!.IsEnabled;
+                        var isExpanded = expandedSource == PostingSource.LinkedIn;
+                    }
+
+                    <button type="button" 
+                            class="inline-flex items-center gap-2 p-1.5 pr-3 rounded-full border transition-all cursor-pointer shadow-xs select-none @(isExpanded ? "border-[#0f766e] bg-[#f0fdfa] ring-2 ring-[#0f766e]/20" : (isOnline ? "bg-white border-slate-200 hover:border-slate-300" : "bg-slate-50 border-slate-200 text-slate-500"))"
+                            @onclick="() => ToggleExpandSource(PostingSource.LinkedIn)">
+                        
+                        <div class="w-6 h-6 rounded-full bg-[#0A66C2] flex items-center justify-center p-1 text-white shrink-0 shadow-2xs">
+                            <svg viewBox="0 0 24 24" fill="white" class="w-full h-full"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.25c-.91 0-1.64.73-1.64 1.64s.73 1.64 1.64 1.64 1.64-.73 1.64-1.64-.73-1.64-1.64Z"/></svg>
+                        </div>
+
+                        <span class="text-xs font-bold text-slate-900">LinkedIn</span>
+
+                        @if (isConnected)
+                        {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold @(isOnline ? "bg-teal-50 text-[#0f766e] border border-teal-200" : "bg-slate-100 text-slate-500 border border-slate-200")">
+                                @(isOnline ? $"{linkedInSchedule!.IntervalMinutes}m" : "Paused")
+                            </span>
+                            <span class="w-2 h-2 rounded-full @(isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300")"></span>
+                        }
+                        else
+                        {
+                            <span class="text-[10px] font-mono text-slate-400">Offline</span>
+                        }
+
+                        <span class="text-[10px] text-slate-400 transition-transform duration-200 @(isExpanded ? "rotate-180 text-[#0f766e]" : "")">▼</span>
+                    </button>
+                </div>
+
+                @if (expandedSource == PostingSource.LinkedIn)
+                {
+                    var schedule = Profile.Schedules.FirstOrDefault(s => s.Source == PostingSource.LinkedIn);
+                    var isConnectedSched = schedule is not null;
+                    var isOnlineSched = isConnectedSched && schedule!.IsEnabled;
+
+                    <div class="p-3.5 rounded-xl border border-teal-200 bg-white shadow-xs transition-all animate-in fade-in duration-150">
+                        @if (isConnectedSched)
+                        {
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <button type="button" 
+                                            class="w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center shrink-0 @(isOnlineSched ? "bg-[#0f766e] justify-end" : "bg-slate-300 justify-start")" 
+                                            @onclick="() => ToggleScheduleStatusAsync(schedule!)"
+                                            title="@(isOnlineSched ? "Pause scraping" : "Resume scraping")">
+                                        <span class="w-4 h-4 rounded-full bg-white shadow-xs"></span>
+                                    </button>
+                                    <span class="text-xs font-semibold @(isOnlineSched ? "text-emerald-700" : "text-slate-500")">
+                                        @(isOnlineSched ? "Active" : "Paused")
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-slate-500 font-mono">Check every:</span>
+                                    <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                                        @foreach (var (lbl, val) in new[] { ("15m", 15), ("30m", 30), ("1h", 60), ("2h", 120) })
+                                        {
+                                            var isSel = schedule!.IntervalMinutes == val;
+                                            <button type="button" 
+                                                    class="px-2.5 py-0.5 rounded text-center transition-all cursor-pointer @(isSel ? "bg-white font-bold text-[#0f766e] shadow-xs" : "text-slate-600 hover:text-slate-900")" 
+                                                    @onclick="() => UpdateScheduleIntervalAsync(schedule!, val)">
+                                                @lbl
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="relative w-20">
+                                        <input type="number" 
+                                               min="5" 
+                                               class="w-full text-xs font-mono font-bold text-slate-800 text-center py-1 pr-5 pl-1 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                                               value="@schedule!.IntervalMinutes"
+                                               @onchange="(e) => HandleIntervalInputChange(schedule!, e)" />
+                                        <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-mono pointer-events-none">m</span>
+                                    </div>
+                                    <button type="button" 
+                                            class="text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer leading-none ml-1"
+                                            title="Close"
+                                            @onclick="() => expandedSource = null">
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-500">LinkedIn scraper is currently disconnected.</span>
+                                <button type="button" 
+                                        class="px-3 py-1.5 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold shadow-xs transition-colors cursor-pointer"
+                                        @onclick="() => AddScheduleAsync(PostingSource.LinkedIn)">
+                                    + Connect LinkedIn
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="space-y-4 pt-1">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Retention & Dispatch</div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-800 mb-1">Max Posting Age <span class="text-rose-500">*</span></label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs flex-1">
+                            @foreach (var (label, val) in new[] { ("1h", 60), ("2h", 120), ("6h", 360), ("1d", 1440) })
+                            {
+                                var isAct = Profile.MaxPostingAgeMinutes == val;
+                                <button type="button" 
+                                        class="flex-1 text-center py-1 rounded transition-all cursor-pointer @(isAct ? "bg-white font-bold text-[#0f766e] shadow-xs" : "text-slate-600 hover:text-slate-900")" 
+                                        @onclick="() => Profile.MaxPostingAgeMinutes = val">
+                                    @label
+                                </button>
+                            }
+                        </div>
+                        <div class="relative sm:w-36">
+                            <input type="number" 
+                                   min="1" 
+                                   class="w-full text-xs font-mono pl-3 pr-11 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                                   placeholder="Minutes" 
+                                   @bind="Profile.MaxPostingAgeMinutes" />
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono pointer-events-none">min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-800 mb-1">Telegram Chat ID <span class="text-rose-500">*</span></label>
+                        <input class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                               placeholder="-1001234567890" 
+                               @bind="Profile.TelegramChatId" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-800 mb-1">Telegram Bot Token <span class="text-rose-500">*</span></label>
+                        <input type="password" 
+                               class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
+                               placeholder="Token" 
+                               @bind="Profile.BotToken" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="relative min-h-[580px] flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+            <canvas id="emptyWorkbenchCanvas" class="absolute inset-0 w-full h-full pointer-events-none opacity-60"></canvas>
+            <div class="relative z-10 max-w-sm">
+                <div class="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 flex items-center justify-center mx-auto mb-3 text-xl font-bold shadow-xs">
+                    ⚡
+                </div>
+                <h3 class="text-sm font-bold text-slate-900 mb-1">No Channel Selected</h3>
+                <p class="text-xs text-slate-500 mb-4">Select an existing monitoring channel from the sidebar or start a new search profile.</p>
+                <button type="button" 
+                        class="text-xs px-4 py-2 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold shadow-xs transition-colors cursor-pointer" 
+                        @onclick="() => State.CreateNewProfile()">
+                    + Create New Channel
+                </button>
+            </div>
+        </div>
+    }
+</main>
