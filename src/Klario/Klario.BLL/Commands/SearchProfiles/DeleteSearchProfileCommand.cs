@@ -1,3 +1,4 @@
+using FluentValidation;
 using Klario.BLL.Exceptions;
 using Klario.BLL.Interfaces;
 using Klario.DAL.Context;
@@ -42,5 +43,14 @@ public class DeleteSearchProfileCommandHandler : IRequestHandler<DeleteSearchPro
         }
 
         return true;
+    }
+}
+
+public class DeleteSearchProfileCommandValidator : AbstractValidator<DeleteSearchProfileCommand>
+{
+    public DeleteSearchProfileCommandValidator()
+    {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Id is required.");
     }
 }

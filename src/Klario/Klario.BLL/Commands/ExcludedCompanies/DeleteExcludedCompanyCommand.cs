@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using Klario.BLL.Exceptions;
 using Klario.DAL.Context;
 using Klario.DAL.Models;
@@ -34,5 +35,14 @@ public class DeleteExcludedCompanyCommandHandler : IRequestHandler<DeleteExclude
         await _context.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+}
+
+public class DeleteExcludedCompanyCommandValidator : AbstractValidator<DeleteExcludedCompanyCommand>
+{
+    public DeleteExcludedCompanyCommandValidator()
+    {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Id is required.");
     }
 }
