@@ -4,6 +4,7 @@ using Klario.BLL.Interfaces;
 using Klario.BLL.Orchestrators;
 using Klario.BLL.Queries.Schedules;
 using Klario.Common.Enums;
+using Klario.PL.Filters;
 using MediatR;
 
 namespace Klario.PL.Services;
@@ -30,7 +31,7 @@ public class HangfirePostingScheduleManager : IPostingScheduleManager
 
         _recurringJobManager.AddOrUpdate<HangfirePostingScheduleManager>(
             jobId,
-            manager => manager.ExecuteIngestionAsync(profileId, source),
+            manager => manager.ExecuteIngestionAsync(profileId, source, intervalMinutes),
             cron
         );
     }
@@ -41,7 +42,8 @@ public class HangfirePostingScheduleManager : IPostingScheduleManager
         _recurringJobManager.RemoveIfExists(jobId);
     }
 
-    public async Task ExecuteIngestionAsync(Guid profileId, PostingSource source)
+    [SkipIfRecentlyExecuted]
+    public async Task ExecuteIngestionAsync(Guid profileId, PostingSource source, int intervalMinutes)
     {
         await _mediator.Send(new PostingIngestionOrchestrator(profileId, source));
     }
@@ -63,5 +65,5 @@ public class HangfirePostingScheduleManager : IPostingScheduleManager
         }
     }
 
-    private static string GetJobId(Guid profileId, PostingSource source) => $"ingest:{profileId}:{source}";
+    public static string GetJobId(Guid profileId, PostingSource source) => $"ingest:{profileId}:{source}";
 }
