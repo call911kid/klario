@@ -27,8 +27,17 @@
                             Delete
                         </button>
                     }
+                    @if (HasUnsavedChanges && Profile.Id != Guid.Empty)
+                    {
+                        <button type="button" 
+                                class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors cursor-pointer" 
+                                @onclick="DiscardChanges">
+                            Discard
+                        </button>
+                    }
                     <button type="button" 
-                            class="text-xs px-3.5 py-1.5 rounded-lg bg-[#0f766e] hover:bg-[#115e59] text-white font-semibold transition-colors shadow-xs cursor-pointer" 
+                            disabled="@(!HasUnsavedChanges)"
+                            class="text-xs px-3.5 py-1.5 rounded-lg font-semibold transition-colors shadow-xs @(HasUnsavedChanges ? "bg-[#0f766e] hover:bg-[#115e59] text-white cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed")" 
                             @onclick="SaveCurrentProfileAsync">
                         Save Channel
                     </button>
@@ -40,12 +49,14 @@
                     <label class="block text-xs font-semibold text-slate-800 mb-1">Channel Name <span class="text-rose-500">*</span></label>
                     <input class="w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-300 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e] focus:border-[#0f766e] transition-all" 
                            @bind="Profile.Name" 
+                           @bind:event="oninput"
                            placeholder="e.g. Lead .NET Platform Architect" />
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-800 mb-1">Description & Strategy Notes</label>
                     <input class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e] focus:border-[#0f766e] transition-all" 
                            @bind="Profile.Description" 
+                           @bind:event="oninput"
                            placeholder="e.g. Remote EMEA, Staff/Lead tier, immediate alerts..." />
                 </div>
             </div>
@@ -335,7 +346,8 @@
                                    min="1" 
                                    class="w-full text-xs font-mono pl-3 pr-11 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
                                    placeholder="Minutes" 
-                                   @bind="Profile.MaxPostingAgeMinutes" />
+                                   value="@Profile.MaxPostingAgeMinutes" 
+                                   @oninput="HandleMaxPostingAgeInput" />
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono pointer-events-none">min</span>
                         </div>
                     </div>
@@ -346,14 +358,16 @@
                         <label class="block text-xs font-semibold text-slate-800 mb-1">Telegram Chat ID <span class="text-rose-500">*</span></label>
                         <input class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
                                placeholder="-1001234567890" 
-                               @bind="Profile.TelegramChatId" />
+                               @bind="Profile.TelegramChatId" 
+                               @bind:event="oninput" />
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-800 mb-1">Telegram Bot Token <span class="text-rose-500">*</span></label>
                         <input type="password" 
                                class="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
                                placeholder="Token" 
-                               @bind="Profile.BotToken" />
+                               @bind="Profile.BotToken" 
+                               @bind:event="oninput" />
                     </div>
                 </div>
             </div>

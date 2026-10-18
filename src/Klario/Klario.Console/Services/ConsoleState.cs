@@ -152,12 +152,12 @@ public sealed class ConsoleState
         NotifyStateChanged();
     }
 
-    public async Task SaveProfileAsync(SearchProfileViewModel profile)
+    public async Task<bool> SaveProfileAsync(SearchProfileViewModel profile)
     {
         if (string.IsNullOrWhiteSpace(profile.Name))
         {
             ShowToast("Channel name required.");
-            return;
+            return false;
         }
 
         try
@@ -183,10 +183,12 @@ public sealed class ConsoleState
                 }
             }
             NotifyStateChanged();
+            return true;
         }
         catch (Exception ex)
         {
             ShowToast($"Save failed: {ex.Message}");
+            return false;
         }
     }
 
