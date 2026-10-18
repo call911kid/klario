@@ -130,7 +130,7 @@ public partial class ChannelEditor : ComponentBase, IDisposable
 
     private async Task HandleIntervalInputChange(ProviderScheduleModel schedule, ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out var val) && val >= 5)
+        if (int.TryParse(e.Value?.ToString(), out var val) && val >= 1)
         {
             await UpdateScheduleIntervalAsync(schedule, val);
         }

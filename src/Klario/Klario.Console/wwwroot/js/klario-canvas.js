@@ -163,4 +163,27 @@
             activeTopos.delete(canvasId);
         }
     };
+
+    window.klarioAuth = {
+        getSecret: function () {
+            try {
+                return localStorage.getItem('klario_secret_key');
+            } catch (e) {
+                return null;
+            }
+        },
+        saveSecret: function (key) {
+            try {
+                if (key) {
+                    localStorage.setItem('klario_secret_key', key);
+                }
+            } catch (e) {}
+        },
+        clearSecret: function () {
+            try {
+                localStorage.removeItem('klario_secret_key');
+            } catch (e) {}
+        }
+    };
 })();
+

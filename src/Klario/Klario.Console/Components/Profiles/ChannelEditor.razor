@@ -271,7 +271,7 @@
                                 <div class="flex items-center gap-2">
                                     <span class="text-[11px] text-slate-500 font-mono">Check every:</span>
                                     <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-                                        @foreach (var (lbl, val) in new[] { ("15m", 15), ("30m", 30), ("1h", 60), ("2h", 120) })
+                                        @foreach (var (lbl, val) in new[] { ("1m", 1), ("15m", 15), ("30m", 30), ("1h", 60), ("2h", 120) })
                                         {
                                             var isSel = schedule!.IntervalMinutes == val;
                                             <button type="button" 
@@ -283,7 +283,7 @@
                                     </div>
                                     <div class="relative w-20">
                                         <input type="number" 
-                                               min="5" 
+                                               min="1" 
                                                class="w-full text-xs font-mono font-bold text-slate-800 text-center py-1 pr-5 pl-1 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#0f766e]" 
                                                value="@schedule!.IntervalMinutes"
                                                @onchange="(e) => HandleIntervalInputChange(schedule!, e)" />
