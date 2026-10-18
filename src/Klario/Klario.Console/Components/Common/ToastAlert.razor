@@ -2,8 +2,17 @@
 
 @if (!string.IsNullOrWhiteSpace(State.ToastMessage))
 {
-    <div class="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs shadow-lg border border-slate-800 font-medium animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div class="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs shadow-lg border border-slate-800 font-medium animate-in fade-in slide-in-from-bottom-2 duration-200">
         <span class="w-2 h-2 rounded-full bg-teal-400"></span>
         <span>@State.ToastMessage</span>
+        @if (!string.IsNullOrWhiteSpace(State.ToastActionText) && State.ToastActionCallback is not null)
+        {
+            <span class="text-slate-600">·</span>
+            <button type="button" 
+                    class="font-bold text-teal-400 hover:text-teal-300 underline underline-offset-2 cursor-pointer transition-colors" 
+                    @onclick="ExecuteActionAsync">
+                @State.ToastActionText
+            </button>
+        }
     </div>
 }

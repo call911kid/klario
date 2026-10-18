@@ -12,6 +12,16 @@ public partial class ToastAlert : ComponentBase, IDisposable
         State.OnChange += HandleStateChanged;
     }
 
+    private async Task ExecuteActionAsync()
+    {
+        var callback = State.ToastActionCallback;
+        State.ClearToast();
+        if (callback is not null)
+        {
+            await callback();
+        }
+    }
+
     private void HandleStateChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()

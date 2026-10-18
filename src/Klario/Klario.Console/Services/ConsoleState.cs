@@ -27,6 +27,11 @@ public sealed class ConsoleState
     public string ActiveTab { get; set; } = "profiles";
     public string SearchFilter { get; set; } = string.Empty;
     public string ToastMessage { get; private set; } = string.Empty;
+    public string? ToastActionText { get; private set; }
+    public Func<Task>? ToastActionCallback { get; private set; }
+    private CancellationTokenSource? _toastCts;
+    private readonly Dictionary<Guid, (SearchProfileViewModel Profile, int Index, CancellationTokenSource Cts)> _pendingDeletions = new();
+    private readonly Dictionary<Guid, (ExcludedCompanyModel Company, int Index, CancellationTokenSource Cts)> _pendingCompanyDeletions = new();
 
     public List<SearchProfileViewModel> Profiles { get; private set; } = [];
     public List<ExcludedCompanyModel> ExcludedCompanies { get; private set; } = [];
@@ -152,12 +157,12 @@ public sealed class ConsoleState
         NotifyStateChanged();
     }
 
-    public async Task SaveProfileAsync(SearchProfileViewModel profile)
+    public async Task<bool> SaveProfileAsync(SearchProfileViewModel profile)
     {
         if (string.IsNullOrWhiteSpace(profile.Name))
         {
             ShowToast("Channel name required.");
-            return;
+            return false;
         }
 
         try
@@ -183,10 +188,12 @@ public sealed class ConsoleState
                 }
             }
             NotifyStateChanged();
+            return true;
         }
         catch (Exception ex)
         {
             ShowToast($"Save failed: {ex.Message}");
+            return false;
         }
     }
 
@@ -210,19 +217,96 @@ public sealed class ConsoleState
 
     public async Task DeleteProfileAsync(SearchProfileViewModel profile)
     {
-        if (profile.Id == Guid.Empty) return;
-
-        try
+        if (profile.Id == Guid.Empty)
         {
-            await _apiClient.DeleteProfileAsync(ServerUrl, SecretKey, profile.Id);
             Profiles.Remove(profile);
             SelectedProfile = Profiles.FirstOrDefault();
-            ShowToast("Channel deleted.");
+            ShowToast("Channel draft discarded.");
             NotifyStateChanged();
+            return;
         }
-        catch (Exception ex)
+
+        await CommitPendingDeletionsAsync();
+
+        var originalIndex = Profiles.IndexOf(profile);
+        Profiles.Remove(profile);
+        SelectedProfile = Profiles.FirstOrDefault();
+        NotifyStateChanged();
+
+        var cts = new CancellationTokenSource();
+        _pendingDeletions[profile.Id] = (profile, originalIndex, cts);
+        var token = cts.Token;
+
+        ShowToast(
+            $"Channel '{profile.Name}' deleted",
+            actionText: "Undo",
+            actionCallback: () =>
+            {
+                cts.Cancel();
+                _pendingDeletions.Remove(profile.Id);
+
+                if (originalIndex >= 0 && originalIndex <= Profiles.Count)
+                {
+                    Profiles.Insert(originalIndex, profile);
+                }
+                else
+                {
+                    Profiles.Add(profile);
+                }
+
+                SelectedProfile = profile;
+                ShowToast($"Restored '{profile.Name}'.");
+                NotifyStateChanged();
+                return Task.CompletedTask;
+            },
+            durationMs: 5000);
+
+        _ = Task.Run(async () =>
         {
-            ShowToast($"Delete failed: {ex.Message}");
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    _pendingDeletions.Remove(profile.Id);
+                    await _apiClient.DeleteProfileAsync(ServerUrl, SecretKey, profile.Id);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                ShowToast($"Failed to delete {profile.Name}: {ex.Message}");
+                if (!Profiles.Contains(profile))
+                {
+                    Profiles.Insert(Math.Min(originalIndex >= 0 ? originalIndex : 0, Profiles.Count), profile);
+                    NotifyStateChanged();
+                }
+            }
+        }, token);
+    }
+
+    public async Task CommitPendingDeletionsAsync()
+    {
+        if (_pendingDeletions.Count == 0) return;
+
+        var entries = _pendingDeletions.Values.ToList();
+        _pendingDeletions.Clear();
+
+        foreach (var (p, _, cts) in entries)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                cts.Cancel();
+                try
+                {
+                    await _apiClient.DeleteProfileAsync(ServerUrl, SecretKey, p.Id);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 
@@ -345,30 +429,129 @@ public sealed class ConsoleState
 
     public async Task DeleteExcludedCompanyAsync(Guid id)
     {
-        try
+        var company = ExcludedCompanies.FirstOrDefault(c => c.Id == id);
+        if (company is null) return;
+
+        await CommitPendingCompanyDeletionsAsync();
+
+        var originalIndex = ExcludedCompanies.IndexOf(company);
+        ExcludedCompanies.Remove(company);
+        NotifyStateChanged();
+
+        var cts = new CancellationTokenSource();
+        _pendingCompanyDeletions[id] = (company, originalIndex, cts);
+        var token = cts.Token;
+
+        ShowToast(
+            $"Removed '{company.Name}' from exclusions",
+            actionText: "Undo",
+            actionCallback: () =>
+            {
+                cts.Cancel();
+                _pendingCompanyDeletions.Remove(id);
+
+                if (originalIndex >= 0 && originalIndex <= ExcludedCompanies.Count)
+                {
+                    ExcludedCompanies.Insert(originalIndex, company);
+                }
+                else
+                {
+                    ExcludedCompanies.Add(company);
+                }
+
+                ShowToast($"Restored '{company.Name}'.");
+                NotifyStateChanged();
+                return Task.CompletedTask;
+            },
+            durationMs: 5000);
+
+        _ = Task.Run(async () =>
         {
-            await _apiClient.DeleteExcludedCompanyAsync(ServerUrl, SecretKey, id);
-            ExcludedCompanies.RemoveAll(c => c.Id == id);
-            ShowToast("Company removed from exclusions.");
-            NotifyStateChanged();
-        }
-        catch (Exception ex)
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    _pendingCompanyDeletions.Remove(id);
+                    await _apiClient.DeleteExcludedCompanyAsync(ServerUrl, SecretKey, id);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                ShowToast($"Failed to remove {company.Name}: {ex.Message}");
+                if (!ExcludedCompanies.Contains(company))
+                {
+                    ExcludedCompanies.Insert(Math.Min(originalIndex >= 0 ? originalIndex : 0, ExcludedCompanies.Count), company);
+                    NotifyStateChanged();
+                }
+            }
+        }, token);
+    }
+
+    public async Task CommitPendingCompanyDeletionsAsync()
+    {
+        if (_pendingCompanyDeletions.Count == 0) return;
+
+        var entries = _pendingCompanyDeletions.Values.ToList();
+        _pendingCompanyDeletions.Clear();
+
+        foreach (var (c, _, cts) in entries)
         {
-            ShowToast($"Error: {ex.Message}");
+            if (!cts.IsCancellationRequested)
+            {
+                cts.Cancel();
+                try
+                {
+                    await _apiClient.DeleteExcludedCompanyAsync(ServerUrl, SecretKey, c.Id);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 
-    public void ShowToast(string message)
+    public void ShowToast(string message, string? actionText = null, Func<Task>? actionCallback = null, int durationMs = 2500)
     {
+        _toastCts?.Cancel();
+        _toastCts = new CancellationTokenSource();
+        var token = _toastCts.Token;
+
         ToastMessage = message;
+        ToastActionText = actionText;
+        ToastActionCallback = actionCallback;
         NotifyStateChanged();
 
         _ = Task.Run(async () =>
         {
-            await Task.Delay(2500);
-            ToastMessage = string.Empty;
-            NotifyStateChanged();
-        });
+            try
+            {
+                await Task.Delay(durationMs, token);
+                if (!token.IsCancellationRequested)
+                {
+                    ToastMessage = string.Empty;
+                    ToastActionText = null;
+                    ToastActionCallback = null;
+                    NotifyStateChanged();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+        }, token);
+    }
+
+    public void ClearToast()
+    {
+        _toastCts?.Cancel();
+        _toastCts = null;
+        ToastMessage = string.Empty;
+        ToastActionText = null;
+        ToastActionCallback = null;
+        NotifyStateChanged();
     }
 
     public void NotifyStateChanged() => OnChange?.Invoke();
