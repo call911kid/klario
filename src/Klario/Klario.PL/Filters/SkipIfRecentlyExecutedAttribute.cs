@@ -1,53 +1,43 @@
-using System.Globalization;
+using Hangfire.Client;
 using Hangfire.Common;
-using Hangfire.Server;
 using Hangfire.Storage;
 using Klario.Common.Enums;
 using Klario.PL.Services;
 
 namespace Klario.PL.Filters;
 
-public sealed class SkipIfRecentlyExecutedAttribute : JobFilterAttribute, IServerFilter
+public sealed class SkipIfRecentlyExecutedAttribute : JobFilterAttribute, IClientFilter
 {
-    public void OnPerforming(PerformingContext filterContext)
+    public void OnCreating(CreatingContext filterContext)
     {
-        var args = filterContext.BackgroundJob.Job.Args;
-        if (args.Count < 3)
+        var args = filterContext.Job.Args;
+        if (args.Count < 2)
             return;
 
         if (!Guid.TryParse(args[0]?.ToString(), out var profileId) ||
-            !Enum.TryParse<PostingSource>(args[1]?.ToString(), out var source) ||
-            !int.TryParse(args[2]?.ToString(), out int intervalMinutes) ||
-            intervalMinutes <= 0)
+            !Enum.TryParse<PostingSource>(args[1]?.ToString(), out var source))
         {
             return;
         }
 
         string recurringJobId = HangfirePostingScheduleManager.GetJobId(profileId, source);
-        string throttleKey = $"throttle:{recurringJobId}";
 
-        var entries = filterContext.Connection.GetAllEntriesFromHash(throttleKey);
-        if (entries is not null && 
-            entries.TryGetValue("LastRun", out var lastRunStr) && 
-            DateTime.TryParse(lastRunStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var lastRun))
+        var recurringJob = filterContext.Connection
+            .GetRecurringJobs()
+            .FirstOrDefault(r => r.Id == recurringJobId);
+
+        if (recurringJob?.LastJobId is not null)
         {
-            var elapsed = DateTime.UtcNow - lastRun;
-            var minInterval = TimeSpan.FromMinutes(intervalMinutes * 0.8);
-
-            if (elapsed < minInterval)
+            var lastJobData = filterContext.Connection.GetJobData(recurringJob.LastJobId);
+            if (lastJobData is not null && (lastJobData.State == "Enqueued"))
             {
                 filterContext.Canceled = true;
                 return;
             }
         }
-
-        filterContext.Connection.SetRangeInHash(throttleKey, new[]
-        {
-            new KeyValuePair<string, string>("LastRun", DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture))
-        });
     }
 
-    public void OnPerformed(PerformedContext filterContext)
+    public void OnCreated(CreatedContext filterContext)
     {
     }
 }
