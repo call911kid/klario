@@ -109,6 +109,7 @@ public sealed class ConsoleState
     public void Lock()
     {
         IsUnlocked = false;
+        SecretKey = string.Empty;
         GateError = string.Empty;
         NotifyStateChanged();
     }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Klario.Console.Services;
 
 namespace Klario.Console.Components.Auth;
@@ -6,6 +7,7 @@ namespace Klario.Console.Components.Auth;
 public partial class AuthGate : ComponentBase, IDisposable
 {
     [Inject] private ConsoleState State { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public EventCallback OnUnlocked { get; set; }
 
@@ -31,6 +33,21 @@ public partial class AuthGate : ComponentBase, IDisposable
         var success = await State.UnlockAsync();
         if (success)
         {
+            try
+            {
+                if (State.RememberKey)
+                {
+                    await JS.InvokeVoidAsync("klarioAuth.saveSecret", State.SecretKey);
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("klarioAuth.clearSecret");
+                }
+            }
+            catch
+            {
+            }
+
             await OnUnlocked.InvokeAsync();
         }
     }

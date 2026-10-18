@@ -6,7 +6,17 @@
 {
     <div class="relative min-h-screen bg-[#F1F5F9] text-slate-800 antialiased p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden">
         <canvas id="loginTopoCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
-        <AuthGate OnUnlocked="HandleUnlockedAsync" />
+        @if (isCheckingAuth)
+        {
+            <div class="relative z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-white/80 backdrop-blur-xs px-4 py-2 rounded-full border border-slate-200 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-[#0f766e] animate-pulse"></span>
+                <span>Connecting...</span>
+            </div>
+        }
+        else
+        {
+            <AuthGate OnUnlocked="HandleUnlockedAsync" />
+        }
     </div>
 }
 else

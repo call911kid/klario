@@ -14,6 +14,29 @@
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased">
     <Routes />
+    <script>
+        window.klarioAuth = {
+            getSecret: function () {
+                try {
+                    return localStorage.getItem('klario_secret_key');
+                } catch (e) {
+                    return null;
+                }
+            },
+            saveSecret: function (key) {
+                try {
+                    if (key) {
+                        localStorage.setItem('klario_secret_key', key);
+                    }
+                } catch (e) {}
+            },
+            clearSecret: function () {
+                try {
+                    localStorage.removeItem('klario_secret_key');
+                } catch (e) {}
+            }
+        };
+    </script>
     <script src="_content/Klario.Console/js/klario-canvas.js"></script>
     <script src="_framework/blazor.web.js"></script>
 </body>
