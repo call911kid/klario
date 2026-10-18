@@ -5,22 +5,40 @@
     {
         <div class="p-5 sm:p-6 space-y-5">
             <div class="flex items-center justify-between pb-3.5 border-b border-slate-200">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full @(Profile.IsActive ? "bg-[#0f766e]" : "bg-slate-400")"></span>
-                    <span class="text-xs font-semibold text-slate-800">
-                        @(Profile.IsActive ? "Active" : "Paused")
-                    </span>
+                <div class="flex items-center gap-2.5">
+                    @if (Profile.Id != Guid.Empty)
+                    {
+                        <button type="button" 
+                                role="switch"
+                                aria-checked="@Profile.IsActive"
+                                title="@(Profile.IsActive ? "Click to pause channel" : "Click to activate channel")"
+                                class="group inline-flex items-center gap-2 cursor-pointer select-none bg-transparent border-0 p-0 focus:outline-none"
+                                @onclick="ToggleActiveStatusAsync">
+                            <span class="relative inline-flex items-center w-9 h-5 rounded-full transition-colors @(Profile.IsActive ? "bg-[#0f766e]" : "bg-slate-300 group-hover:bg-slate-400")">
+                                <span class="inline-block w-4 h-4 rounded-full bg-white shadow-xs transition-transform duration-200 ease-in-out transform ml-0.5 @(Profile.IsActive ? "translate-x-4" : "translate-x-0")"></span>
+                            </span>
+                            <span class="text-xs font-semibold transition-colors @(Profile.IsActive ? "text-slate-800" : "text-slate-500")">
+                                @(Profile.IsActive ? "Active" : "Paused")
+                            </span>
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="inline-flex items-center gap-2 select-none" title="New channels start active once saved">
+                            <span class="relative inline-flex items-center w-9 h-5 rounded-full bg-slate-200 cursor-not-allowed">
+                                <span class="inline-block w-4 h-4 rounded-full bg-white shadow-xs ml-0.5 translate-x-4"></span>
+                            </span>
+                            <span class="text-xs font-semibold text-slate-400">
+                                Active <span class="text-slate-400 font-normal">(New)</span>
+                            </span>
+                        </div>
+                    }
                     <span class="text-[11px] font-mono text-slate-400">· @Profile.FormatCreatedAt()</span>
                 </div>
 
                 <div class="flex items-center gap-2">
                     @if (Profile.Id != Guid.Empty)
                     {
-                        <button type="button" 
-                                class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors cursor-pointer" 
-                                @onclick="ToggleActiveStatusAsync">
-                            @(Profile.IsActive ? "Pause" : "Resume")
-                        </button>
                         <button type="button" 
                                 class="text-xs px-3 py-1.5 text-rose-600 font-medium hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" 
                                 @onclick="DeleteCurrentProfileAsync">
