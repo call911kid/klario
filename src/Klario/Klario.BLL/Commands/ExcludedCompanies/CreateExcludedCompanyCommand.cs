@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using Klario.DAL.Context;
 using Klario.DAL.Models;
 using MediatR;
@@ -47,5 +48,15 @@ public class CreateExcludedCompanyCommandHandler : IRequestHandler<CreateExclude
         await _context.SaveChangesAsync(cancellationToken);
 
         return entity.Id;
+    }
+}
+
+public class CreateExcludedCompanyCommandValidator : AbstractValidator<CreateExcludedCompanyCommand>
+{
+    public CreateExcludedCompanyCommandValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Name is required.")
+            .MaximumLength(200).WithMessage("Name must not exceed 200 characters.");
     }
 }

@@ -49,6 +49,7 @@ namespace Klario.PL.Middleware
         private static string GetErrorCode(Exception exception) => exception switch
         {
             EntityNotFoundException => ErrorCodes.EntityNotFound,
+            FluentValidation.ValidationException => ErrorCodes.ValidationFailed,
             UnauthorizedAccessException => ErrorCodes.Unauthorized,
             ArgumentException or InvalidOperationException => ErrorCodes.BadRequest,
             _ => ErrorCodes.InternalServerError
@@ -57,6 +58,7 @@ namespace Klario.PL.Middleware
         private static HttpStatusCode GetStatusCode(Exception exception) => exception switch
         {
             EntityNotFoundException => HttpStatusCode.NotFound,
+            FluentValidation.ValidationException => HttpStatusCode.BadRequest,
             UnauthorizedAccessException => HttpStatusCode.Unauthorized,
             ArgumentException or InvalidOperationException => HttpStatusCode.BadRequest,
             _ => HttpStatusCode.InternalServerError
@@ -65,6 +67,7 @@ namespace Klario.PL.Middleware
         private static string GetMessage(Exception exception) => exception switch
         {
             EntityNotFoundException entityNotFoundException => entityNotFoundException.Message,
+            FluentValidation.ValidationException => "One or more validation errors occurred.",
             UnauthorizedAccessException unauthorizedException => unauthorizedException.Message,
             ArgumentException argumentException => argumentException.Message,
             _ => "An unexpected error occurred."
@@ -72,6 +75,7 @@ namespace Klario.PL.Middleware
 
         private static IEnumerable<string> GetErrors(Exception exception) => exception switch
         {
+            FluentValidation.ValidationException validationException => validationException.Errors.Select(e => e.ErrorMessage),
             _ => Array.Empty<string>()
         };
     }

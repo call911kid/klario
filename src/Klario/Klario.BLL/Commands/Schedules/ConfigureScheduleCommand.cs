@@ -1,3 +1,4 @@
+using FluentValidation;
 using Klario.BLL.Exceptions;
 using Klario.BLL.Interfaces;
 using Klario.Common.Enums;
@@ -66,5 +67,20 @@ public class ConfigureScheduleCommandHandler : IRequestHandler<ConfigureSchedule
         {
             _scheduleManager.RemoveRecurringIngestion(profile.Id, schedule.Source);
         }
+    }
+}
+
+public class ConfigureScheduleCommandValidator : AbstractValidator<ConfigureScheduleCommand>
+{
+    public ConfigureScheduleCommandValidator()
+    {
+        RuleFor(x => x.SearchProfileId)
+            .NotEmpty().WithMessage("SearchProfileId is required.");
+
+        RuleFor(x => x.Source)
+            .IsInEnum().WithMessage("Invalid posting source value.");
+
+        RuleFor(x => x.IntervalMinutes)
+            .GreaterThan(0).WithMessage("IntervalMinutes must be greater than 0.");
     }
 }

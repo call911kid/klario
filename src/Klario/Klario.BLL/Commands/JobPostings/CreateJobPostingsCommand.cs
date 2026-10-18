@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentValidation;
 using Klario.DAL.Context;
 using Klario.DAL.Models;
 using Klario.Providers.Contracts;
@@ -32,5 +33,14 @@ public class CreateJobPostingsCommandHandler : IRequestHandler<CreateJobPostings
 
         _context.JobPostings.AddRange(entities);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+}
+
+public class CreateJobPostingsCommandValidator : AbstractValidator<CreateJobPostingsCommand>
+{
+    public CreateJobPostingsCommandValidator()
+    {
+        RuleFor(x => x.Postings)
+            .NotNull().WithMessage("Postings collection cannot be null.");
     }
 }

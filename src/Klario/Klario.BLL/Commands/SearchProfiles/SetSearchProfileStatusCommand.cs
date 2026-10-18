@@ -1,3 +1,4 @@
+using FluentValidation;
 using Klario.BLL.Exceptions;
 using Klario.BLL.Interfaces;
 using Klario.DAL.Context;
@@ -53,5 +54,14 @@ public class SetSearchProfileStatusCommandHandler : IRequestHandler<SetSearchPro
                 _scheduleManager.RemoveRecurringIngestion(profile.Id, schedule.Source);
             }
         }
+    }
+}
+
+public class SetSearchProfileStatusCommandValidator : AbstractValidator<SetSearchProfileStatusCommand>
+{
+    public SetSearchProfileStatusCommandValidator()
+    {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Id is required.");
     }
 }

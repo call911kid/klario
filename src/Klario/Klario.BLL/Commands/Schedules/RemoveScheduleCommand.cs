@@ -1,3 +1,4 @@
+using FluentValidation;
 using Klario.BLL.Exceptions;
 using Klario.BLL.Interfaces;
 using Klario.Common.Enums;
@@ -44,5 +45,17 @@ public class RemoveScheduleCommandHandler : IRequestHandler<RemoveScheduleComman
             await _context.SaveChangesAsync(cancellationToken);
             _scheduleManager.RemoveRecurringIngestion(profile.Id, request.Source);
         }
+    }
+}
+
+public class RemoveScheduleCommandValidator : AbstractValidator<RemoveScheduleCommand>
+{
+    public RemoveScheduleCommandValidator()
+    {
+        RuleFor(x => x.SearchProfileId)
+            .NotEmpty().WithMessage("SearchProfileId is required.");
+
+        RuleFor(x => x.Source)
+            .IsInEnum().WithMessage("Invalid posting source value.");
     }
 }
