@@ -22,18 +22,20 @@ public class CreateExcludedCompanyCommandHandler : IRequestHandler<CreateExclude
 
     public async Task<Guid> Handle(CreateExcludedCompanyCommand request, CancellationToken cancellationToken)
     {
-        var normalized = request.Name.Trim().ToLowerInvariant();
+        var displayName = request.Name.Trim();
+        var normalized = displayName.ToLowerInvariant();
 
         // if existing record exists (including soft-deleted)
         var existing = await _context.ExcludedCompanies
             .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.Name == normalized, cancellationToken);
+            .FirstOrDefaultAsync(c => c.NormalizedName == normalized, cancellationToken);
 
         if (existing is not null)
         {
             if (existing.IsDeleted)
             {
                 existing.IsDeleted = false;
+                existing.Name = displayName;
                 await _context.SaveChangesAsync(cancellationToken);
             }
             return existing.Id;
@@ -41,7 +43,8 @@ public class CreateExcludedCompanyCommandHandler : IRequestHandler<CreateExclude
 
         var entity = new ExcludedCompany
         {
-            Name = normalized
+            Name = displayName,
+            NormalizedName = normalized
         };
 
         _context.ExcludedCompanies.Add(entity);

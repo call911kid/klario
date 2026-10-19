@@ -14,7 +14,11 @@ public class ExcludedCompanyConfiguration : IEntityTypeConfiguration<ExcludedCom
             .IsRequired()
             .HasMaxLength(200);
 
-        builder.HasIndex(c => c.Name)
+        builder.Property(c => c.NormalizedName)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.HasIndex(c => c.NormalizedName)
             .IsUnique();
 
         builder.HasQueryFilter(c => !c.IsDeleted);

@@ -88,15 +88,11 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
             .Distinct()
             .ToList();
 
-        var excludedCompaniesQuery = new GetExcludedCompaniesQuery(candidateCompanies);
-        var excludedCompanies = await _mediator.Send(excludedCompaniesQuery, cancellationToken);
+        var excludedCompaniesQuery = new GetMatchingExcludedCompaniesQuery(candidateCompanies);
+        var excludedNames = await _mediator.Send(excludedCompaniesQuery, cancellationToken);
 
-        if (excludedCompanies.Count > 0)
+        if (excludedNames.Count > 0)
         {
-            var excludedNames = excludedCompanies
-                .Select(ec => ec.Name)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
             newPostings.RemoveAll(p => excludedNames.Contains(p.Company.Trim().ToLowerInvariant()));
 
             if (newPostings.Count == 0)

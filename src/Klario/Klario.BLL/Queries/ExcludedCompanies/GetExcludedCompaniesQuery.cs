@@ -9,9 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Klario.BLL.Queries.ExcludedCompanies;
 
-public record GetExcludedCompaniesQuery(
-    IReadOnlyList<string>? CompanyNames = null
-) : IRequest<List<ExcludedCompanyResponse>>;
+public record GetExcludedCompaniesQuery : IRequest<List<ExcludedCompanyResponse>>;
 
 public sealed record ExcludedCompanyResponse(
     Guid Id,
@@ -32,20 +30,8 @@ public class GetExcludedCompaniesQueryHandler : IRequestHandler<GetExcludedCompa
         GetExcludedCompaniesQuery request,
         CancellationToken cancellationToken)
     {
-        var query = _context.ExcludedCompanies
-            .AsNoTracking();
-
-        if (request.CompanyNames is { Count: > 0 })
-        {
-            var normalizedNames = request.CompanyNames
-                .Where(n => !string.IsNullOrWhiteSpace(n))
-                .Select(n => n.Trim().ToLowerInvariant())
-                .Distinct()
-                .ToList();
-
-            query = query.Where(c => normalizedNames.Contains(c.Name));
-        }
-        return await query
+        return await _context.ExcludedCompanies
+            .AsNoTracking()
             .OrderBy(c => c.Name)
             .Select(c => new ExcludedCompanyResponse(c.Id, c.Name, c.CreatedAt))
             .ToListAsync(cancellationToken);
