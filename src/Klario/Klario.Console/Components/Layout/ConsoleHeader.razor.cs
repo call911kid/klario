@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Klario.Console.Services;
 
 namespace Klario.Console.Components.Layout;
@@ -7,7 +7,7 @@ namespace Klario.Console.Components.Layout;
 public partial class ConsoleHeader : ComponentBase, IDisposable
 {
     [Inject] private ConsoleState State { get; set; } = default!;
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ProtectedLocalStorage ProtectedLocalStorage { get; set; } = default!;
 
     [Parameter] public EventCallback OnLocked { get; set; }
 
@@ -20,7 +20,7 @@ public partial class ConsoleHeader : ComponentBase, IDisposable
     {
         try
         {
-            await JS.InvokeVoidAsync("klarioAuth.clearSecret");
+            await ProtectedLocalStorage.DeleteAsync("klario_secret_key");
         }
         catch
         {

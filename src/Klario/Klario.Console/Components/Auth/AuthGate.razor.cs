@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Klario.Console.Services;
 
 namespace Klario.Console.Components.Auth;
@@ -7,7 +7,7 @@ namespace Klario.Console.Components.Auth;
 public partial class AuthGate : ComponentBase, IDisposable
 {
     [Inject] private ConsoleState State { get; set; } = default!;
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ProtectedLocalStorage ProtectedLocalStorage { get; set; } = default!;
 
     [Parameter] public EventCallback OnUnlocked { get; set; }
 
@@ -37,11 +37,11 @@ public partial class AuthGate : ComponentBase, IDisposable
             {
                 if (State.RememberKey)
                 {
-                    await JS.InvokeVoidAsync("klarioAuth.saveSecret", State.SecretKey);
+                    await ProtectedLocalStorage.SetAsync("klario_secret_key", State.SecretKey);
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("klarioAuth.clearSecret");
+                    await ProtectedLocalStorage.DeleteAsync("klario_secret_key");
                 }
             }
             catch

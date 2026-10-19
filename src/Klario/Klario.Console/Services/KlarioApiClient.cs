@@ -28,7 +28,7 @@ public sealed class KlarioApiClient
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             client.DefaultRequestHeaders.Remove("X-Api-Key");
-            client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("X-Api-Key", apiKey);
         }
         return client;
     }

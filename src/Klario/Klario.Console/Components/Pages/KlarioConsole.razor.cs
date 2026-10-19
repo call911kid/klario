@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.JSInterop;
 using Klario.Console.Services;
 
@@ -7,6 +8,7 @@ namespace Klario.Console.Components.Pages;
 public partial class KlarioConsole : ComponentBase, IDisposable
 {
     [Inject] private ConsoleState State { get; set; } = default!;
+    [Inject] private ProtectedLocalStorage ProtectedLocalStorage { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private bool isCheckingAuth = true;
@@ -24,10 +26,10 @@ public partial class KlarioConsole : ComponentBase, IDisposable
             try
             {
                 await JS.InvokeVoidAsync("initKlarioTopography", "loginTopoCanvas");
-                var savedSecret = await JS.InvokeAsync<string?>("klarioAuth.getSecret");
-                if (!string.IsNullOrWhiteSpace(savedSecret))
+                var result = await ProtectedLocalStorage.GetAsync<string>("klario_secret_key");
+                if (result.Success && !string.IsNullOrWhiteSpace(result.Value))
                 {
-                    State.SecretKey = savedSecret;
+                    State.SecretKey = result.Value;
                     State.RememberKey = true;
                     var success = await State.UnlockAsync();
                     if (success)
@@ -36,7 +38,7 @@ public partial class KlarioConsole : ComponentBase, IDisposable
                     }
                     else
                     {
-                        await JS.InvokeVoidAsync("klarioAuth.clearSecret");
+                        await ProtectedLocalStorage.DeleteAsync("klario_secret_key");
                     }
                 }
             }

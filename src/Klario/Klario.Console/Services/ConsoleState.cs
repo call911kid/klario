@@ -71,6 +71,13 @@ public sealed class ConsoleState
             return false;
         }
 
+        if (SecretKey.Any(c => c > 127))
+        {
+            GateError = "I've seen better attempts.";
+            NotifyStateChanged();
+            return false;
+        }
+
         GateError = string.Empty;
         IsVerifying = true;
         NotifyStateChanged();
@@ -94,6 +101,11 @@ public sealed class ConsoleState
             return true;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            GateError = "I've seen better attempts.";
+            return false;
+        }
+        catch (FormatException)
         {
             GateError = "I've seen better attempts.";
             return false;
