@@ -18,7 +18,42 @@ permissions:
   actions: write
 
 jobs:
-  deploy:
+  prepare:
+    name: Prepare Instance Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.resolve-instances.outputs.matrix }}
+    steps:
+      - name: Resolve target deployment instances
+        id: resolve-instances
+        shell: bash
+        env:
+          INSTANCES_JSON: ${{ secrets.INSTANCES_JSON }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -n "$INSTANCES_JSON" ]; then
+            echo "Using dynamic INSTANCES_JSON secret configuration."
+            echo "matrix=$INSTANCES_JSON" >> $GITHUB_OUTPUT
+          else
+            echo "Falling back to legacy single instance configuration."
+            FALLBACK=$(jq -n -c \
+              --arg name "default" \
+              --arg server "$FTP_SERVER" \
+              --arg username "$FTP_USERNAME" \
+              --arg password "$FTP_PASSWORD" \
+              --arg app_url "$APP_URL" \
+              --arg server_dir "/wwwroot/" \
+              --arg protocol "ftp" \
+              --arg port "21" \
+              '[{name: $name, ftp_server: $server, ftp_username: $username, ftp_password: $password, app_url: $app_url, server_dir: $server_dir, protocol: $protocol, port: ($port | tonumber)}]')
+            echo "matrix=$FALLBACK" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build & Package Payload
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -78,17 +113,52 @@ jobs:
           </html>
           EOF
 
+      - name: Upload application payload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-payload
+          path: ./publish
+          retention-days: 1
+
+      - name: Upload offline sentinel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-offline-sentinel
+          path: ./app_offline_dir
+          retention-days: 1
+
+  deploy:
+    name: Deploy (${{ matrix.instance.name || matrix.instance.ftp_server }})
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        instance: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Download application payload artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-payload
+          path: ./publish
+
+      - name: Download offline sentinel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-offline-sentinel
+          path: ./app_offline_dir
+
       - name: Take application offline
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         continue-on-error: true
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /wwwroot/
+          server: ${{ matrix.instance.ftp_server }}
+          username: ${{ matrix.instance.ftp_username }}
+          password: ${{ matrix.instance.ftp_password }}
+          server-dir: ${{ matrix.instance.server_dir || '/wwwroot/' }}
           local-dir: ./app_offline_dir/
-          protocol: ftp
-          port: 21
+          protocol: ${{ matrix.instance.protocol || 'ftp' }}
+          port: ${{ matrix.instance.port || 21 }}
 
       - name: Await process termination
         run: sleep 5
@@ -96,24 +166,24 @@ jobs:
       - name: Upload application payload
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /wwwroot/
+          server: ${{ matrix.instance.ftp_server }}
+          username: ${{ matrix.instance.ftp_username }}
+          password: ${{ matrix.instance.ftp_password }}
+          server-dir: ${{ matrix.instance.server_dir || '/wwwroot/' }}
           local-dir: ./publish/
-          protocol: ftp
-          port: 21
+          protocol: ${{ matrix.instance.protocol || 'ftp' }}
+          port: ${{ matrix.instance.port || 21 }}
           dangerous-clean-slate: false
 
       - name: Bring application online
         shell: python
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: /wwwroot/
-          FTP_PROTOCOL: ftp
-          FTP_PORT: 21
+          FTP_SERVER: ${{ matrix.instance.ftp_server }}
+          FTP_USERNAME: ${{ matrix.instance.ftp_username }}
+          FTP_PASSWORD: ${{ matrix.instance.ftp_password }}
+          FTP_SERVER_DIR: ${{ matrix.instance.server_dir || '/wwwroot/' }}
+          FTP_PROTOCOL: ${{ matrix.instance.protocol || 'ftp' }}
+          FTP_PORT: ${{ matrix.instance.port || 21 }}
         run: |
           import os
           from ftplib import FTP, FTP_TLS
@@ -127,24 +197,24 @@ jobs:
 
           ftp_cls = FTP_TLS if protocol in ('ftps', 'tls') else FTP
           try:
-              with ftp_cls(timeout=30) as ftp:
-                  ftp.connect(server, port)
-                  ftp.login(user, passwd)
-                  if protocol in ('ftps', 'tls'):
-                      ftp.prot_p()
-                  if server_dir:
-                      ftp.cwd(server_dir)
-                  try:
-                      ftp.delete('app_offline.htm')
-                  except Exception:
-                      pass
+            with ftp_cls(timeout=30) as ftp:
+              ftp.connect(server, port)
+              ftp.login(user, passwd)
+              if protocol in ('ftps', 'tls'):
+                ftp.prot_p()
+              if server_dir:
+                ftp.cwd(server_dir)
+              try:
+                ftp.delete('app_offline.htm')
+              except Exception:
+                pass
           except Exception:
-              pass
+            pass
 
       - name: Verify application health
         shell: bash
         env:
-          APP_URL: ${{ secrets.APP_URL }}
+          APP_URL: ${{ matrix.instance.app_url }}
         run: |
           if [ -z "$APP_URL" ]; then
             exit 0
@@ -153,14 +223,21 @@ jobs:
           for i in {1..12}; do
             STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" "$TARGET_URL" || true)
             if [ "$STATUS" = "200" ]; then
+              echo "Health check succeeded: HTTP 200"
               exit 0
             fi
             sleep 5
           done
+          echo "Health check failed for $TARGET_URL"
           exit 1
 
-      - name: Purge execution logs
-        if: always()
+  cleanup:
+    name: Purge Execution Logs
+    needs: [deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge run logs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
