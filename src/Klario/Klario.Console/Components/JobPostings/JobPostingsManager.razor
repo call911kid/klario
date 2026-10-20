@@ -1,0 +1,164 @@
+@namespace Klario.Console.Components.JobPostings
+@using Klario.Common.Enums
+
+<div class="p-5 sm:p-6 w-full">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-2.5 font-mono text-xs">
+            <span class="text-slate-400">TODAY:</span>
+            <span class="font-bold text-emerald-700">@State.JobStats.TodayCount</span>
+            <span class="text-slate-200">/</span>
+            <span class="text-slate-400">WEEK:</span>
+            <span class="font-bold text-slate-700">@State.JobStats.WeekCount</span>
+            <span class="text-slate-200">/</span>
+            <span class="text-slate-400">TOTAL:</span>
+            <span class="font-bold text-slate-700">@State.JobStats.TotalCount</span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <select class="font-mono text-xs px-2.5 py-1 rounded border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:border-[#0f766e] text-slate-700 cursor-pointer"
+                    @bind="SelectedSource"
+                    @bind:after="HandleFilterChangedAsync">
+                <option value="">ALL SOURCES</option>
+                <option value="@PostingSource.LinkedIn">LINKEDIN</option>
+                <option value="@PostingSource.CustomCareerPage">CAREER PAGES</option>
+            </select>
+
+            <input type="text" 
+                   placeholder="Filter records..." 
+                   class="font-mono text-xs px-2.5 py-1 rounded border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:border-[#0f766e] w-48"
+                   @bind="SearchTerm" 
+                   @bind:event="oninput"
+                   @onkeydown="HandleSearchKeyDownAsync" />
+            <button type="button" 
+                    class="text-xs px-2.5 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors font-mono cursor-pointer"
+                    @onclick="HandleSearchClickAsync">
+                Filter
+            </button>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto border border-slate-200/90 rounded-lg bg-white/90 shadow-2xs">
+        <table class="w-full text-left text-xs font-mono divide-y divide-slate-200/80 table-fixed">
+            <thead class="bg-slate-50/70 text-slate-400 font-medium text-[11px] tracking-wider uppercase">
+                <tr>
+                    <th class="py-2.5 px-3 w-28 whitespace-nowrap">Discovered</th>
+                    <th class="py-2.5 px-3 w-32 whitespace-nowrap">Source</th>
+                    <th class="py-2.5 px-3 w-72 whitespace-nowrap">Company</th>
+                    <th class="py-2.5 px-3">Role / Title</th>
+                    <th class="py-2.5 px-3 w-48 whitespace-nowrap">Location</th>
+                    <th class="py-2.5 px-3 w-24 text-right whitespace-nowrap">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                @if (isLoading)
+                {
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 font-mono text-xs">
+                            <span class="inline-block w-2 h-2 rounded-full bg-[#0f766e] animate-ping mr-2"></span>
+                            Querying ledger records...
+                        </td>
+                    </tr>
+                }
+                else if (jobItems.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 font-mono text-xs">
+                            No job postings found matching criteria.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @for (var i = 0; i < jobItems.Count; i++)
+                    {
+                        var job = jobItems[i];
+                        var isNearBottom = i >= jobItems.Count - 2;
+
+                        <tr class="hover:bg-slate-50/70 transition-colors group relative hover:z-50">
+                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">
+                                @job.CreatedAt.ToString("MM-dd HH:mm")
+                            </td>
+
+                            <td class="py-2.5 px-3 whitespace-nowrap">
+                                @if (job.Source == PostingSource.LinkedIn)
+                                {
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-700">
+                                        <svg class="w-3.5 h-3.5 text-[#0a66c2] fill-current shrink-0" viewBox="0 0 24 24">
+                                            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28Z"/>
+                                        </svg>
+                                        <span>LinkedIn</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-600">
+                                        <svg class="w-3.5 h-3.5 text-[#0f766e] fill-none stroke-current stroke-2 shrink-0" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/>
+                                        </svg>
+                                        <span>Career Page</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="py-2.5 px-3">
+                                <TruncatedTextPopover Text="@job.Company"
+                                                      Kicker="Company"
+                                                      IsNearBottom="@isNearBottom"
+                                                      TextClass="font-bold text-slate-900"
+                                                      PopoverWidthClass="w-full min-w-[200px] max-w-xs" />
+                            </td>
+
+                            <td class="py-2.5 px-3">
+                                <TruncatedTextPopover Text="@job.Title"
+                                                      Kicker="Full Job Title"
+                                                      IsNearBottom="@isNearBottom"
+                                                      TextClass="font-sans font-medium text-slate-800"
+                                                      PopoverWidthClass="w-full min-w-[260px] max-w-md" />
+                            </td>
+
+                            <td class="py-2.5 px-3 text-slate-500 text-[11px]">
+                                <span class="truncate block" title="@job.Location">@job.Location</span>
+                            </td>
+
+                            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                                <a href="@job.Url" target="_blank" rel="noopener noreferrer" 
+                                   class="text-xs text-[#0f766e] hover:text-[#115e59] font-bold hover:underline tracking-tight">
+                                    EXPLORE ↗
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex items-center justify-between pt-3 font-mono text-[11px] text-slate-400">
+        <div>
+            @if (totalCount > 0)
+            {
+                <span>ROWS: @(((currentPage - 1) * pageSize) + 1)–@Math.Min(currentPage * pageSize, totalCount) OF @totalCount</span>
+            }
+            else
+            {
+                <span>ROWS: 0 OF 0</span>
+            }
+        </div>
+        <div class="flex items-center gap-2 text-slate-600">
+            <button type="button" 
+                    class="cursor-pointer hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled="@(!hasPreviousPage || isLoading)"
+                    @onclick="GoToPreviousPageAsync">
+                [PREV]
+            </button>
+            <span class="text-slate-900 font-bold">PAGE @currentPage / @Math.Max(1, totalPages)</span>
+            <button type="button" 
+                    class="cursor-pointer hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled="@(!hasNextPage || isLoading)"
+                    @onclick="GoToNextPageAsync">
+                [NEXT]
+            </button>
+        </div>
+    </div>
+</div>
