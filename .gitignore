@@ -28,4 +28,5 @@ logs/
 # Publish Profiles
 *.pubxml
 *.pubxml.user
-/src/Klario/Klario.PL/Controllers/TestLinkedInProviderController.cs
+# Worktrees
+.worktrees/
