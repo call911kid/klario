@@ -14,7 +14,8 @@ namespace Klario.BLL.Queries.JobPostings;
 public record GetJobPostingsQuery(
     PagingQuery Paging,
     PostingSource? Source = null,
-    string? Search = null
+    string? Search = null,
+    bool? IsBlocked = null
 ) : IRequest<PagedResponse<GetJobPostingsResponse>>;
 
 public sealed record GetJobPostingsResponse(
@@ -27,7 +28,8 @@ public sealed record GetJobPostingsResponse(
     DateTime? PostedAt,
     PostingSource Source,
     string? DescriptionSnippet,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool IsCompanyBlocked
 );
 
 public class GetJobPostingsQueryHandler : IRequestHandler<GetJobPostingsQuery, PagedResponse<GetJobPostingsResponse>>
@@ -57,6 +59,15 @@ public class GetJobPostingsQueryHandler : IRequestHandler<GetJobPostingsQuery, P
             query = query.Where(p => EF.Functions.Like(p.Title, $"%{term}%") || EF.Functions.Like(p.Company, $"%{term}%"));
         }
 
+        if (request.IsBlocked.HasValue)
+        {
+            query = request.IsBlocked.Value
+                ? query.Where(p => _context.ExcludedCompanies
+                    .Any(e => e.NormalizedName == p.Company.Trim().ToLower()))
+                : query.Where(p => !_context.ExcludedCompanies
+                    .Any(e => e.NormalizedName == p.Company.Trim().ToLower()));
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
@@ -74,7 +85,8 @@ public class GetJobPostingsQueryHandler : IRequestHandler<GetJobPostingsQuery, P
                 p.PostedAt,
                 p.Source,
                 p.DescriptionSnippet,
-                p.CreatedAt
+                p.CreatedAt,
+                _context.ExcludedCompanies.Any(e => e.NormalizedName == p.Company.Trim().ToLower())
             ))
             .ToListAsync(cancellationToken);
 

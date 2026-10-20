@@ -121,5 +121,6 @@ public sealed record JobPostingDto(
     DateTime? PostedAt,
     PostingSource Source,
     string? DescriptionSnippet,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool IsCompanyBlocked = false
 );

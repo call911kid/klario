@@ -23,6 +23,14 @@
                 <option value="@PostingSource.CustomCareerPage">CAREER PAGES</option>
             </select>
 
+            <select class="font-mono text-xs px-2.5 py-1 rounded border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:border-[#0f766e] text-slate-700 cursor-pointer"
+                    @bind="SelectedBlockedFilterString"
+                    @bind:after="HandleFilterChangedAsync">
+                <option value="">ALL COMPANIES</option>
+                <option value="false">ACTIVE ONLY</option>
+                <option value="true">BLOCKED ONLY</option>
+            </select>
+
             <input type="text" 
                    placeholder="Filter records..." 
                    class="font-mono text-xs px-2.5 py-1 rounded border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:border-[#0f766e] w-48"
@@ -41,7 +49,7 @@
         <table class="w-full text-left text-xs font-mono divide-y divide-slate-200/80 table-fixed">
             <thead class="bg-slate-50/70 text-slate-400 font-medium text-[11px] tracking-wider uppercase">
                 <tr>
-                    <th class="py-2.5 px-3 w-28 whitespace-nowrap">Discovered</th>
+                    <th class="py-2.5 px-3 w-36 whitespace-nowrap">Discovered</th>
                     <th class="py-2.5 px-3 w-32 whitespace-nowrap">Source</th>
                     <th class="py-2.5 px-3 w-72 whitespace-nowrap">Company</th>
                     <th class="py-2.5 px-3">Role / Title</th>
@@ -74,15 +82,15 @@
                         var job = jobItems[i];
                         var isNearBottom = i >= jobItems.Count - 2;
 
-                        <tr class="hover:bg-slate-50/70 transition-colors group relative hover:z-50">
+                        <tr class="@(job.IsCompanyBlocked ? "bg-red-50/30 line-through decoration-red-600/90 decoration-[1.5px] opacity-85 hover:opacity-100" : "") hover:bg-slate-50/70 transition-all group relative hover:z-50">
                             <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">
-                                @job.CreatedAt.ToString("MM-dd HH:mm")
+                                @FormatDiscoveredTime(job.CreatedAt)
                             </td>
 
                             <td class="py-2.5 px-3 whitespace-nowrap">
                                 @if (job.Source == PostingSource.LinkedIn)
                                 {
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-700">
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-700 no-underline">
                                         <svg class="w-3.5 h-3.5 text-[#0a66c2] fill-current shrink-0" viewBox="0 0 24 24">
                                             <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28Z"/>
                                         </svg>
@@ -91,7 +99,7 @@
                                 }
                                 else
                                 {
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-600">
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-slate-600 no-underline">
                                         <svg class="w-3.5 h-3.5 text-[#0f766e] fill-none stroke-current stroke-2 shrink-0" viewBox="0 0 24 24">
                                             <circle cx="12" cy="12" r="10"/>
                                             <path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/>
@@ -123,7 +131,7 @@
 
                             <td class="py-2.5 px-3 text-right whitespace-nowrap">
                                 <a href="@job.Url" target="_blank" rel="noopener noreferrer" 
-                                   class="text-xs text-[#0f766e] hover:text-[#115e59] font-bold hover:underline tracking-tight">
+                                   class="text-xs text-[#0f766e] hover:text-[#115e59] font-bold hover:underline tracking-tight no-underline inline-block">
                                     EXPLORE ↗
                                 </a>
                             </td>

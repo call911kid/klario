@@ -198,7 +198,8 @@ public sealed class KlarioApiClient
         int page = 1,
         int pageSize = 20,
         PostingSource? source = null,
-        string? search = null)
+        string? search = null,
+        bool? isBlocked = null)
     {
         var client = CreateClient(baseUrl, apiKey);
         var query = new List<string>
@@ -209,6 +210,7 @@ public sealed class KlarioApiClient
 
         if (source.HasValue) query.Add($"source={source.Value}");
         if (!string.IsNullOrWhiteSpace(search)) query.Add($"search={Uri.EscapeDataString(search.Trim())}");
+        if (isBlocked.HasValue) query.Add($"isBlocked={isBlocked.Value.ToString().ToLowerInvariant()}");
 
         var url = $"api/job-postings?{string.Join("&", query)}";
         var response = await client.GetFromJsonAsync<ApiEnvelope<PagedResponse<JobPostingDto>>>(url, JsonOptions);
