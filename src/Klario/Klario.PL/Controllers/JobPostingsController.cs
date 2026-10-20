@@ -28,9 +28,10 @@ public class JobPostingsController : ControllerBase
         [FromQuery] PagingQuery paging,
         [FromQuery] PostingSource? source,
         [FromQuery] string? search,
+        [FromQuery] bool? isBlocked,
         CancellationToken cancellationToken)
     {
-        var query = new GetJobPostingsQuery(paging, source, search);
+        var query = new GetJobPostingsQuery(paging, source, search, isBlocked);
         var result = await _mediator.Send(query, cancellationToken);
 
         return Ok(ApiResponse.Success(result));
