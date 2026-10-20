@@ -37,6 +37,7 @@ public sealed class ConsoleState
     public List<ExcludedCompanyModel> ExcludedCompanies { get; private set; } = [];
     public JobPostingStatsModel JobStats { get; private set; } = new(0, 0, 0);
     public SearchProfileViewModel? SelectedProfile { get; set; }
+    public TimeZoneInfo? UserTimeZone { get; set; }
 
     public IReadOnlyList<SearchProfileViewModel> FilteredProfiles =>
         string.IsNullOrWhiteSpace(SearchFilter)

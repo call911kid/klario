@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using Klario.Common.Enums;
 using Klario.Console.Models;
 using Klario.Console.Services;
@@ -13,6 +14,7 @@ public partial class JobPostingsManager : ComponentBase, IDisposable
 {
     [Inject] private ConsoleState State { get; set; } = default!;
     [Inject] private KlarioApiClient ApiClient { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private List<JobPostingDto> jobItems = [];
     private bool isLoading = true;
@@ -25,12 +27,55 @@ public partial class JobPostingsManager : ComponentBase, IDisposable
 
     private PostingSource? SelectedSource { get; set; }
     private string SearchTerm { get; set; } = string.Empty;
-
+    private string SelectedBlockedFilterString { get; set; } = string.Empty;
+    private bool? SelectedBlockedFilter => SelectedBlockedFilterString switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null
+    };
 
     protected override async Task OnInitializedAsync()
     {
         State.OnChange += HandleStateChanged;
         await LoadDataAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && State.UserTimeZone == null)
+        {
+            try
+            {
+                var timeZoneId = await JS.InvokeAsync<string>("eval", "Intl.DateTimeFormat().resolvedOptions().timeZone");
+                if (!string.IsNullOrWhiteSpace(timeZoneId))
+                {
+                    State.UserTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                try
+                {
+                    var offsetMinutes = await JS.InvokeAsync<int>("eval", "new Date().getTimezoneOffset()");
+                    State.UserTimeZone = TimeZoneInfo.CreateCustomTimeZone("BrowserLocal", TimeSpan.FromMinutes(-offsetMinutes), "BrowserLocal", "BrowserLocal");
+                    StateHasChanged();
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+
+    private string FormatDiscoveredTime(DateTime utcTime)
+    {
+        var localTime = State.UserTimeZone != null
+            ? TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcTime, DateTimeKind.Utc), State.UserTimeZone)
+            : utcTime.ToLocalTime();
+
+        return localTime.ToString("MM-dd hh:mm tt");
     }
 
     private async Task LoadDataAsync()
@@ -46,7 +91,8 @@ public partial class JobPostingsManager : ComponentBase, IDisposable
                 page: currentPage,
                 pageSize: pageSize,
                 source: SelectedSource,
-                search: SearchTerm
+                search: SearchTerm,
+                isBlocked: SelectedBlockedFilter
             );
 
             jobItems = [.. pagedResponse.Items];
