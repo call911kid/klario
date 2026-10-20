@@ -6,5 +6,5 @@ public interface IPostingScheduleManager
 {
     void ScheduleRecurringIngestion(Guid profileId, PostingSource source, int intervalMinutes);
     void RemoveRecurringIngestion(Guid profileId, PostingSource source);
-    Task RescheduleAllAsync(CancellationToken cancellationToken = default);
+    Task SyncSchedulesAsync(CancellationToken cancellationToken = default);
 }

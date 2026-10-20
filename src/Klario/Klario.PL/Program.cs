@@ -101,6 +101,6 @@ app.MapControllers();
 app.MapKlarioConsole();
 
 await app.MigrateDatabaseAsync();
-await app.InitHangfireSchedulesAsync();
+await app.SyncHangfireSchedulesAsync();
 
 app.Run();

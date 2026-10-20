@@ -48,18 +48,31 @@ public class HangfirePostingScheduleManager : IPostingScheduleManager
         await _mediator.Send(new PostingIngestionOrchestrator(profileId, source));
     }
 
-    public async Task RescheduleAllAsync(CancellationToken cancellationToken = default)
+    public async Task SyncSchedulesAsync(CancellationToken cancellationToken = default)
     {
         using var connection = JobStorage.Current.GetConnection();
-        var recurringJobs = connection.GetRecurringJobs();
-        foreach (var job in recurringJobs)
+        using var lockHandle = connection.AcquireDistributedLock("schedules:sync", TimeSpan.FromMinutes(1));
+
+        var activeSchedules = await _mediator.Send(new GetActiveSchedulesQuery(), cancellationToken);
+        var targetSchedules = activeSchedules.ToDictionary(
+            s => GetJobId(s.ProfileId, s.Source),
+            s => s
+        );
+
+        var existingJobs = connection.GetRecurringJobs();
+        var existingIds = existingJobs.Select(j => j.Id).ToHashSet();
+
+        if (existingIds.SetEquals(targetSchedules.Keys))
+        {
+            return;
+        }
+
+        foreach (var job in existingJobs.Where(j => !targetSchedules.ContainsKey(j.Id)))
         {
             _recurringJobManager.RemoveIfExists(job.Id);
         }
 
-        var activeSchedules = await _mediator.Send(new GetActiveSchedulesQuery(), cancellationToken);
-
-        foreach (var schedule in activeSchedules)
+        foreach (var (jobId, schedule) in targetSchedules)
         {
             ScheduleRecurringIngestion(schedule.ProfileId, schedule.Source, schedule.IntervalMinutes);
         }
