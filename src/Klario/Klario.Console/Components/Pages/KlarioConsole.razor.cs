@@ -25,18 +25,13 @@ public partial class KlarioConsole : ComponentBase, IDisposable
         {
             try
             {
-                await JS.InvokeVoidAsync("initKlarioTopography", "loginTopoCanvas");
                 var result = await ProtectedLocalStorage.GetAsync<string>("klario_secret_key");
                 if (result.Success && !string.IsNullOrWhiteSpace(result.Value))
                 {
                     State.SecretKey = result.Value;
                     State.RememberKey = true;
                     var success = await State.UnlockAsync();
-                    if (success)
-                    {
-                        await JS.InvokeVoidAsync("destroyKlarioTopography", "loginTopoCanvas");
-                    }
-                    else
+                    if (!success)
                     {
                         await ProtectedLocalStorage.DeleteAsync("klario_secret_key");
                     }
@@ -50,22 +45,6 @@ public partial class KlarioConsole : ComponentBase, IDisposable
                 isCheckingAuth = false;
                 StateHasChanged();
             }
-            return;
-        }
-
-        try
-        {
-            if (!State.IsUnlocked)
-            {
-                await JS.InvokeVoidAsync("initKlarioTopography", "loginTopoCanvas");
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("initKlarioTopography", "homeTopoCanvas");
-            }
-        }
-        catch
-        {
         }
     }
 

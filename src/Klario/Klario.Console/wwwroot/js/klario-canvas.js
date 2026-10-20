@@ -163,5 +163,40 @@
             activeTopos.delete(canvasId);
         }
     };
+
+    // Auto-init any canvas bearing [data-topo-canvas] so new pages never need
+    // a manual JS.InvokeVoidAsync call — just add the attribute to the <canvas>.
+    function autoInit() {
+        document.querySelectorAll('canvas[data-topo-canvas]').forEach(function (canvas) {
+            if (canvas.id) {
+                window.initKlarioTopography(canvas.id);
+            }
+        });
+    }
+
+    // Run on first load (script is deferred / placed at end of <body>).
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoInit);
+    } else {
+        autoInit();
+    }
+
+    // Re-run whenever Blazor re-renders and inserts / replaces canvas elements.
+    const observer = new MutationObserver(function (mutations) {
+        let needsInit = false;
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType !== 1) continue;
+                if ((node.matches && node.matches('canvas[data-topo-canvas]')) ||
+                    (node.querySelector && node.querySelector('canvas[data-topo-canvas]'))) {
+                    needsInit = true;
+                    break;
+                }
+            }
+            if (needsInit) break;
+        }
+        if (needsInit) autoInit();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 })();
 
