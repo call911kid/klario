@@ -43,11 +43,11 @@ public static class HangfireExtensions
         return services;
     }
 
-    public static async Task InitHangfireSchedulesAsync(this WebApplication app)
+    public static async Task SyncHangfireSchedulesAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var scheduleManager = scope.ServiceProvider.GetRequiredService<IPostingScheduleManager>();
-        await scheduleManager.RescheduleAllAsync();
+        await scheduleManager.SyncSchedulesAsync();
     }
 }
 

@@ -100,9 +100,9 @@ public class PostingIngestionOrchestratorHandler : IRequestHandler<PostingIngest
         }
 
         var createCommand = new CreateJobPostingsCommand(newPostings);
-        await _mediator.Send(createCommand, cancellationToken);
+        var insertedPostings = await _mediator.Send(createCommand, cancellationToken);
 
-        foreach (var posting in newPostings)
+        foreach (var posting in insertedPostings)
         {
             try
             {

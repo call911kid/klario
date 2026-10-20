@@ -14,11 +14,33 @@ public static class DatabaseExtensions
         try
         {
             var dbContext = services.GetRequiredService<KlarioDbContext>();
-            logger.LogInformation("Applying pending database migrations...");
 
-            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("Acquiring database migration lock...");
+            await dbContext.Database.OpenConnectionAsync();
 
-            logger.LogInformation("Database migrations applied successfully.");
+            try
+            {
+                await dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC sp_getapplock @Resource = 'KlarioDbMigration', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 120000;");
+
+                logger.LogInformation("Migration lock acquired. Applying pending database migrations...");
+                await dbContext.Database.MigrateAsync();
+                logger.LogInformation("Database migrations applied successfully.");
+            }
+            finally
+            {
+                try
+                {
+                    await dbContext.Database.ExecuteSqlRawAsync(
+                        "EXEC sp_releaseapplock @Resource = 'KlarioDbMigration', @LockOwner = 'Session';");
+                }
+                catch (Exception releaseEx)
+                {
+                    logger.LogWarning(releaseEx, "Failed to explicitly release migration lock; connection close will release it.");
+                }
+
+                await dbContext.Database.CloseConnectionAsync();
+            }
         }
         catch (Exception ex)
         {
