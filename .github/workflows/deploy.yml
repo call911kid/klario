@@ -30,27 +30,14 @@ jobs:
         env:
           INSTANCES_JSON: ${{ secrets.INSTANCES_JSON }}
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          APP_URL: ${{ secrets.APP_URL }}
         run: |
           if [ -n "$INSTANCES_JSON" ]; then
-            echo "Using dynamic INSTANCES_JSON secret configuration."
-            COMPACT=$(echo "$INSTANCES_JSON" | jq -c .)
-            echo "matrix=$COMPACT" >> $GITHUB_OUTPUT
+            echo "Extracting instance names for dynamic matrix..."
+            NAMES=$(echo "$INSTANCES_JSON" | jq -c '[.[].name]')
+            echo "matrix=$NAMES" >> $GITHUB_OUTPUT
           else
-            echo "Falling back to legacy single instance configuration."
-            FALLBACK=$(jq -n -c \
-              --arg name "default" \
-              --arg server "$FTP_SERVER" \
-              --arg username "$FTP_USERNAME" \
-              --arg password "$FTP_PASSWORD" \
-              --arg app_url "$APP_URL" \
-              --arg server_dir "/wwwroot/" \
-              --arg protocol "ftp" \
-              --arg port "21" \
-              '[{name: $name, ftp_server: $server, ftp_username: $username, ftp_password: $password, app_url: $app_url, server_dir: $server_dir, protocol: $protocol, port: ($port | tonumber)}]')
-            echo "matrix=$FALLBACK" >> $GITHUB_OUTPUT
+            echo "Falling back to legacy single instance..."
+            echo 'matrix=["default"]' >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -129,14 +116,48 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: Deploy (${{ matrix.instance.name || matrix.instance.ftp_server }})
+    name: Deploy (${{ matrix.instance_name }})
     needs: [prepare, build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        instance: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        instance_name: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
+      - name: Resolve instance credentials
+        id: creds
+        shell: bash
+        env:
+          INSTANCES_JSON: ${{ secrets.INSTANCES_JSON }}
+          FALLBACK_SERVER: ${{ secrets.FTP_SERVER }}
+          FALLBACK_USER: ${{ secrets.FTP_USERNAME }}
+          FALLBACK_PASS: ${{ secrets.FTP_PASSWORD }}
+          FALLBACK_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -n "$INSTANCES_JSON" ]; then
+            TARGET=$(echo "$INSTANCES_JSON" | jq -c --arg n "${{ matrix.instance_name }}" '.[] | select(.name == $n)')
+            echo "ftp_server=$(echo "$TARGET" | jq -r .ftp_server)" >> $GITHUB_OUTPUT
+            echo "ftp_username=$(echo "$TARGET" | jq -r .ftp_username)" >> $GITHUB_OUTPUT
+            
+            PASS=$(echo "$TARGET" | jq -r .ftp_password)
+            echo "::add-mask::$PASS"
+            echo "ftp_password=$PASS" >> $GITHUB_OUTPUT
+            
+            echo "app_url=$(echo "$TARGET" | jq -r .app_url)" >> $GITHUB_OUTPUT
+            echo "server_dir=$(echo "$TARGET" | jq -r '.server_dir // "/wwwroot/"')" >> $GITHUB_OUTPUT
+            echo "protocol=$(echo "$TARGET" | jq -r '.protocol // "ftp"')" >> $GITHUB_OUTPUT
+            echo "port=$(echo "$TARGET" | jq -r '.port // "21"')" >> $GITHUB_OUTPUT
+          else
+            echo "ftp_server=$FALLBACK_SERVER" >> $GITHUB_OUTPUT
+            echo "ftp_username=$FALLBACK_USER" >> $GITHUB_OUTPUT
+            echo "::add-mask::$FALLBACK_PASS"
+            echo "ftp_password=$FALLBACK_PASS" >> $GITHUB_OUTPUT
+            echo "app_url=$FALLBACK_URL" >> $GITHUB_OUTPUT
+            echo "server_dir=/wwwroot/" >> $GITHUB_OUTPUT
+            echo "protocol=ftp" >> $GITHUB_OUTPUT
+            echo "port=21" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download application payload artifact
         uses: actions/download-artifact@v4
         with:
@@ -153,13 +174,13 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         continue-on-error: true
         with:
-          server: ${{ matrix.instance.ftp_server }}
-          username: ${{ matrix.instance.ftp_username }}
-          password: ${{ matrix.instance.ftp_password }}
-          server-dir: ${{ matrix.instance.server_dir || '/wwwroot/' }}
+          server: ${{ steps.creds.outputs.ftp_server }}
+          username: ${{ steps.creds.outputs.ftp_username }}
+          password: ${{ steps.creds.outputs.ftp_password }}
+          server-dir: ${{ steps.creds.outputs.server_dir }}
           local-dir: ./app_offline_dir/
-          protocol: ${{ matrix.instance.protocol || 'ftp' }}
-          port: ${{ matrix.instance.port || 21 }}
+          protocol: ${{ steps.creds.outputs.protocol }}
+          port: ${{ steps.creds.outputs.port }}
 
       - name: Await process termination
         run: sleep 5
@@ -167,24 +188,24 @@ jobs:
       - name: Upload application payload
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ matrix.instance.ftp_server }}
-          username: ${{ matrix.instance.ftp_username }}
-          password: ${{ matrix.instance.ftp_password }}
-          server-dir: ${{ matrix.instance.server_dir || '/wwwroot/' }}
+          server: ${{ steps.creds.outputs.ftp_server }}
+          username: ${{ steps.creds.outputs.ftp_username }}
+          password: ${{ steps.creds.outputs.ftp_password }}
+          server-dir: ${{ steps.creds.outputs.server_dir }}
           local-dir: ./publish/
-          protocol: ${{ matrix.instance.protocol || 'ftp' }}
-          port: ${{ matrix.instance.port || 21 }}
+          protocol: ${{ steps.creds.outputs.protocol }}
+          port: ${{ steps.creds.outputs.port }}
           dangerous-clean-slate: false
 
       - name: Bring application online
         shell: python
         env:
-          FTP_SERVER: ${{ matrix.instance.ftp_server }}
-          FTP_USERNAME: ${{ matrix.instance.ftp_username }}
-          FTP_PASSWORD: ${{ matrix.instance.ftp_password }}
-          FTP_SERVER_DIR: ${{ matrix.instance.server_dir || '/wwwroot/' }}
-          FTP_PROTOCOL: ${{ matrix.instance.protocol || 'ftp' }}
-          FTP_PORT: ${{ matrix.instance.port || 21 }}
+          FTP_SERVER: ${{ steps.creds.outputs.ftp_server }}
+          FTP_USERNAME: ${{ steps.creds.outputs.ftp_username }}
+          FTP_PASSWORD: ${{ steps.creds.outputs.ftp_password }}
+          FTP_SERVER_DIR: ${{ steps.creds.outputs.server_dir }}
+          FTP_PROTOCOL: ${{ steps.creds.outputs.protocol }}
+          FTP_PORT: ${{ steps.creds.outputs.port }}
         run: |
           import os
           from ftplib import FTP, FTP_TLS
@@ -215,7 +236,7 @@ jobs:
       - name: Verify application health
         shell: bash
         env:
-          APP_URL: ${{ matrix.instance.app_url }}
+          APP_URL: ${{ steps.creds.outputs.app_url }}
         run: |
           if [ -z "$APP_URL" ]; then
             exit 0
