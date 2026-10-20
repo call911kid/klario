@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Klario.Common.Enums;
+using Klario.Common.Pagination;
 using Klario.Console.Models;
 
 namespace Klario.Console.Services;
@@ -182,5 +183,35 @@ public sealed class KlarioApiClient
         var client = CreateClient(baseUrl, apiKey);
         var response = await client.DeleteAsync($"api/search-profiles/{searchProfileId}/schedules/{source}");
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<JobPostingStatsModel> GetJobPostingStatsAsync(string baseUrl, string apiKey)
+    {
+        var client = CreateClient(baseUrl, apiKey);
+        var response = await client.GetFromJsonAsync<ApiEnvelope<JobPostingStatsModel>>("api/job-postings/stats", JsonOptions);
+        return response?.Data ?? new JobPostingStatsModel(0, 0, 0);
+    }
+
+    public async Task<PagedResponse<JobPostingDto>> GetJobPostingsAsync(
+        string baseUrl,
+        string apiKey,
+        int page = 1,
+        int pageSize = 20,
+        PostingSource? source = null,
+        string? search = null)
+    {
+        var client = CreateClient(baseUrl, apiKey);
+        var query = new List<string>
+        {
+            $"Page={page}",
+            $"PageSize={pageSize}"
+        };
+
+        if (source.HasValue) query.Add($"source={source.Value}");
+        if (!string.IsNullOrWhiteSpace(search)) query.Add($"search={Uri.EscapeDataString(search.Trim())}");
+
+        var url = $"api/job-postings?{string.Join("&", query)}";
+        var response = await client.GetFromJsonAsync<ApiEnvelope<PagedResponse<JobPostingDto>>>(url, JsonOptions);
+        return response?.Data ?? new PagedResponse<JobPostingDto>([], page, pageSize, 0);
     }
 }

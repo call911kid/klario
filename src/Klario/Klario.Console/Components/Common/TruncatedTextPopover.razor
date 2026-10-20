@@ -1,0 +1,14 @@
+@namespace Klario.Console.Components.Common
+
+<div class="relative group/popover block w-full cursor-default" data-popover-wrapper>
+    <span class="truncate block @TextClass" data-popover-text>@Text</span>
+    
+    <div data-popover-card
+         class="pointer-events-none absolute @PopoverPosition left-0 hidden group-hover/popover:flex flex-col @PopoverWidthClass bg-white text-slate-800 border border-slate-200/90 shadow-2xl shadow-slate-900/15 rounded-xl px-3.5 py-2.5 z-50 whitespace-normal break-words">
+        @if (!string.IsNullOrWhiteSpace(Kicker))
+        {
+            <span class="text-[9px] uppercase tracking-wider text-[#0f766e] font-bold font-mono mb-1 block">@Kicker</span>
+        }
+        <span class="text-xs font-sans text-slate-800 font-medium leading-relaxed">@Text</span>
+    </div>
+</div>

@@ -35,4 +35,11 @@ public class JobPostingsController : ControllerBase
 
         return Ok(ApiResponse.Success(result));
     }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats(CancellationToken cancellationToken)
+    {
+        var stats = await _mediator.Send(new GetJobPostingStatsQuery(), cancellationToken);
+        return Ok(ApiResponse.Success(stats));
+    }
 }

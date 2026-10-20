@@ -932,3 +932,11 @@ body {
     gap: 0.5rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
+
+/* --------------------------------------------------------------------------
+   TRUNCATED TEXT POPOVER (Only active when text renders native ellipsis ...)
+   -------------------------------------------------------------------------- */
+[data-popover-wrapper]:not([data-truncated="true"]) [data-popover-card] {
+    display: none !important;
+}
+

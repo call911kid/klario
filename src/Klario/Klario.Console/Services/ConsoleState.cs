@@ -35,6 +35,7 @@ public sealed class ConsoleState
 
     public List<SearchProfileViewModel> Profiles { get; private set; } = [];
     public List<ExcludedCompanyModel> ExcludedCompanies { get; private set; } = [];
+    public JobPostingStatsModel JobStats { get; private set; } = new(0, 0, 0);
     public SearchProfileViewModel? SelectedProfile { get; set; }
 
     public IReadOnlyList<SearchProfileViewModel> FilteredProfiles =>
@@ -86,6 +87,7 @@ public sealed class ConsoleState
         {
             Profiles = await _apiClient.GetProfilesAsync(ServerUrl, SecretKey);
             ExcludedCompanies = await _apiClient.GetExcludedCompaniesAsync(ServerUrl, SecretKey);
+            JobStats = await _apiClient.GetJobPostingStatsAsync(ServerUrl, SecretKey);
 
             if (Profiles.Count == 0)
             {
@@ -151,14 +153,6 @@ public sealed class ConsoleState
                     Name = "LinkedIn Jobs",
                     Subtitle = "Guest HTTP Ingestion",
                     IntervalMinutes = 15,
-                    IsEnabled = true
-                },
-                new ProviderScheduleModel
-                {
-                    Source = PostingSource.CustomCareerPage,
-                    Name = "Custom Career Pages",
-                    Subtitle = "Direct ATS Crawl",
-                    IntervalMinutes = 30,
                     IsEnabled = true
                 }
             ],
@@ -564,6 +558,18 @@ public sealed class ConsoleState
         ToastActionText = null;
         ToastActionCallback = null;
         NotifyStateChanged();
+    }
+
+    public async Task RefreshJobStatsAsync()
+    {
+        try
+        {
+            JobStats = await _apiClient.GetJobPostingStatsAsync(ServerUrl, SecretKey);
+            NotifyStateChanged();
+        }
+        catch
+        {
+        }
     }
 
     public void NotifyStateChanged() => OnChange?.Invoke();

@@ -108,3 +108,18 @@ public sealed record SearchProfileApiDto(
     string BotToken,
     DateTime CreatedAt
 );
+
+public sealed record JobPostingStatsModel(int TodayCount, int WeekCount, int TotalCount);
+
+public sealed record JobPostingDto(
+    Guid Id,
+    string ExternalJobId,
+    string Title,
+    string Company,
+    string Location,
+    string Url,
+    DateTime? PostedAt,
+    PostingSource Source,
+    string? DescriptionSnippet,
+    DateTime CreatedAt
+);
