@@ -36,7 +36,8 @@ jobs:
         run: |
           if [ -n "$INSTANCES_JSON" ]; then
             echo "Using dynamic INSTANCES_JSON secret configuration."
-            echo "matrix=$INSTANCES_JSON" >> $GITHUB_OUTPUT
+            COMPACT=$(echo "$INSTANCES_JSON" | jq -c .)
+            echo "matrix=$COMPACT" >> $GITHUB_OUTPUT
           else
             echo "Falling back to legacy single instance configuration."
             FALLBACK=$(jq -n -c \
