@@ -17,6 +17,9 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register Serilog
+builder.Services.AddSerilogLogging(builder.Configuration);
+
 // Add services to the container.
 builder.Services.AddCors(options =>
 {

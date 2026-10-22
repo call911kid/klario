@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using HtmlAgilityPack;
 using Klario.Common.Enums;
 using Klario.Providers.Contracts;
+using Microsoft.Extensions.Logging;
 
 namespace Klario.Providers.LinkedIn;
 
@@ -11,12 +12,14 @@ public class LinkedInProvider : IPostingProvider
     private const string CanonicalPostingBaseUrl = "https://linkedin.com/jobs/view";
 
     private readonly HttpClient _httpClient;
+    private readonly ILogger<LinkedInProvider> _logger;
 
     public PostingSource Source => PostingSource.LinkedIn;
 
-    public LinkedInProvider(HttpClient httpClient)
+    public LinkedInProvider(HttpClient httpClient, ILogger<LinkedInProvider> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<ExternalPosting>> FetchPostingsAsync(
@@ -72,9 +75,15 @@ public class LinkedInProvider : IPostingProvider
                 {
                     throw;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore single target failure to allow remaining searches to complete.
+                    _logger.LogError(
+                        ex,
+                        "[{Source}] Failed while searching for [{TargetTitle}] in [{TargetLocation}].",
+                        Source,
+                        target.Title,
+                        target.Location
+                    );
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(2), ct);
@@ -90,7 +99,7 @@ public class LinkedInProvider : IPostingProvider
         CancellationToken cancellationToken)
     {
         string searchUrl = BuildSearchUrl(title, location, criteria);
-        string? html = await FetchHtmlAsync(searchUrl, cancellationToken);
+        string? html = await FetchHtmlAsync(searchUrl, title, location, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(html))
             return new List<ExternalPosting>();
@@ -127,12 +136,25 @@ public class LinkedInProvider : IPostingProvider
         return $"{BaseSearchUrl}?{string.Join("&", queryParams)}";
     }
 
-    private async Task<string?> FetchHtmlAsync(string searchUrl, CancellationToken cancellationToken)
+    private async Task<string?> FetchHtmlAsync(
+        string searchUrl,
+        string title,
+        string location,
+        CancellationToken cancellationToken)
     {
         using var response = await _httpClient.GetAsync(searchUrl, cancellationToken);
 
-        if ((int)response.StatusCode == 429 || !response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning(
+                "[{Source}] HTTP request failed with status {StatusCode} while searching for [{TargetTitle}] in [{TargetLocation}].",
+                Source,
+                (int)response.StatusCode,
+                title,
+                location
+            );
             return null;
+        }
 
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
